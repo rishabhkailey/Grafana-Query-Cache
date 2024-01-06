@@ -87,7 +87,6 @@ function main() {
         echo "init failed"
         exit $exit_code
     fi
-    
     exit_code=0
     if [ "$1" == "test" ]; then
         config_test
@@ -103,4 +102,4 @@ function main() {
     exit $exit_code
 }
 
-main
+main $1
