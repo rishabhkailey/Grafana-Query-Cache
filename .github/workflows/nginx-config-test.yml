@@ -17,11 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: set runtime env variables
-        run: export NGINX_CONFIG_TEMPLATE_DIRECTORY=$PWD
+        run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=\"$GITHUB_WORKSPACE\"" >> "$GITHUB_ENV"
       - run: |
-          echo $GITHUB_WORKSPACE $NGINX_CONFIG_TEMPLATE_DIRECTORY &&
-          chmod +x ./entrypoint.sh && 
-          NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE ./entrypoint.sh test
+          $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
+          chmod +x ./entrypoint.sh && \
+          ./entrypoint.sh test
 
   nginx-config-ssl-on:
     runs-on: "ubuntu-latest"
@@ -50,11 +50,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: set runtime env variables
-        run: export NGINX_CONFIG_TEMPLATE_DIRECTORY=$PWD
+        run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=\"$GITHUB_WORKSPACE\"" >> "$GITHUB_ENV"
       - run: |
-          echo $GITHUB_WORKSPACE $NGINX_CONFIG_TEMPLATE_DIRECTORY &&
-          chmod +x ./entrypoint.sh && 
-          NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE ./entrypoint.sh test
+          echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
+          chmod +x ./entrypoint.sh && \
+          ./entrypoint.sh test
     
   nginx-config-ssl-off:
     runs-on: "ubuntu-latest"
@@ -83,13 +83,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: set runtime env variables
-        run: export NGINX_CONFIG_TEMPLATE_DIRECTORY=$PWD
+        run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=\"$GITHUB_WORKSPACE\"" >> "$GITHUB_ENV"
       - name: create empty test files
         run: |
           touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE
       - run: |
-          echo $GITHUB_WORKSPACE $NGINX_CONFIG_TEMPLATE_DIRECTORY &&
-          chmod +x ./entrypoint.sh && 
-          NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE ./entrypoint.sh test
+          echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
+          chmod +x ./entrypoint.sh && \
+          ./entrypoint.sh test
 
   # lua-lint:
