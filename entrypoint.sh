@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function init() {
+function init_variables() {
     # default values
     export GRAFANA_HOST=${GRAFANA_HOST:-"localhost:3000"}
     export GRAFANA_SCHEME=${GRAFANA_SCHEME:-"http"}
@@ -19,6 +19,8 @@ function init() {
     export SSL_CIPHERS=${SSL_CIPHERS:-"HIGH:!aNULL:!MD5"}
     export SSL_PASSWORD_FILE=${SSL_PASSWORD_FILE:-""}
     export CLIENT_MAX_BODY_SIZE=${CLIENT_MAX_BODY_SIZE:-"5m"}
+    export NGINX_CONFIG_TEMPLATE_DIRECTORY=${NGINX_CONFIG_TEMPLATE_DIRECTORY:-"/etc/nginx/templates"}
+    export NGINX_CONFIG_OUTPUT_FILE=${NGINX_CONFIG_OUTPUT_FILE:-"/etc/nginx/conf.d/grafana.conf"}
 
     export ENV_VARIABLES_LIST='$GRAFANA_HOST, $GRAFANA_SCHEME, $MAX_CACHE_SIZE, $KEY_ZONE_SIZE, $MAX_INACTIVE_TIME, $CACHE_EXPIRE_TIME, $CACHE_DIRECTORY, $CACHE_VERSION, $SERVER_NAME, $LISTEN, $SSL, $SSL_CERTIFICATE, $SSL_CERTIFICATE_KEY, $SSL_PROTOCOLS, $SSL_CIPHERS, $SSL_CONFIG, $CLIENT_MAX_BODY_SIZE'
 
@@ -27,34 +29,57 @@ function init() {
 
 function genrate_nginx_conf() {
     if [ "$SSL" = "on" ]; then
-        SSL_CONFIG=$(/bin/bash /etc/nginx/templates/ssl-conf.sh)
+        SSL_CONFIG=$(/bin/bash ${NGINX_CONFIG_TEMPLATE_DIRECTORY}/ssl-conf.sh)
         exit_code=$?
         if [ $exit_code -ne 0 ]; then
             echo "failed to substitute env variables for ssl config";
-            exit 1;
+            return 1;
         fi
         export SSL_CONFIG
     fi
 
-    envsubst "$ENV_VARIABLES_LIST" < /etc/nginx/templates/grafana.conf > /etc/nginx/conf.d/grafana.conf
+    envsubst "$ENV_VARIABLES_LIST" < ${NGINX_CONFIG_TEMPLATE_DIRECTORY}/grafana.conf > ${NGINX_CONFIG_OUTPUT_FILE}
     exit_code=$?
     if [ $exit_code -ne 0 ]; then
         echo "failed to substitute env variables for nginx variable"
-        exit 1
-    fi
-
-    nginx -t
-    if [ $exit_code -ne 0 ]; then
-        echo "invalid nginx config"
-        exit 1
+        return 1
     fi
 
 }
 
+function init() {
+    init_variables
+    genrate_nginx_conf
+}
+
+function config_test() {
+    nginx -t
+    if [ $exit_code -ne 0 ]; then
+        echo "invalid nginx config"
+        return 1
+    fi
+}
+
 function start_nginx() {
+    config_test
+    if [ $exit_code -ne 0 ]; then
+        return 1
+    fi
     /usr/bin/openresty -g 'daemon off;'
 }
 
 init
-genrate_nginx_conf
-start_nginx
+
+exit_code=0
+if [ "$1" == "test" ]; then
+    config_test
+    exit_code=$?
+elif [ "$1" == "start" ]; then
+    start_nginx
+    exit_code=$?
+else
+    echo "Valid options are: test and start"
+    exit_code=1
+fi
+
+exit $exit_code
