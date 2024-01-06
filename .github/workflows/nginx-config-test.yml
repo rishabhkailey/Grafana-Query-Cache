@@ -10,7 +10,9 @@ on:
 jobs:
 
   nginx-config-default-options:
-    runs-on: "openresty/openresty:1.21.4.3-bullseye-fat"
+    runs-on: "ubuntu-latest"
+    container: 
+      image: "openresty/openresty:1.21.4.3-bullseye-fat"
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -19,7 +21,9 @@ jobs:
       - run: ./entrypoint.sh test
 
   nginx-config-ssl-on:
-    runs-on: "openresty/openresty:1.21.4.3-bullseye-fat"
+    runs-on: "ubuntu-latest"
+    container: 
+      image: "openresty/openresty:1.21.4.3-bullseye-fat"
     timeout-minutes: 5
     env:
       GRAFANA_HOST: "localhost:3000"
@@ -47,7 +51,9 @@ jobs:
       - run: ./entrypoint.sh test
 
   nginx-config-ssl-off:
-    runs-on: "openresty/openresty:1.21.4.3-bullseye-fat"
+    runs-on: "ubuntu-latest"
+    container: 
+      image: "openresty/openresty:1.21.4.3-bullseye-fat"
     timeout-minutes: 5
     env: 
       GRAFANA_HOST: "localhost:3000"
@@ -77,6 +83,3 @@ jobs:
           touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE
       - run: ./entrypoint.sh test
   # lua-lint:
-
-
-        
