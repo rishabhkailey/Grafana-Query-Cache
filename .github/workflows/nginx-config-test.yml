@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: set runtime env variables
-        run: export NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE
+        run: export NGINX_CONFIG_TEMPLATE_DIRECTORY=$PWD
       - run: |
           chmod +x ./entrypoint.sh && 
           ./entrypoint.sh test
@@ -49,7 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: set runtime env variables
-        run: export NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE
+        run: export NGINX_CONFIG_TEMPLATE_DIRECTORY=$PWD
       - run: |
           chmod +x ./entrypoint.sh && 
           ./entrypoint.sh test
@@ -80,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: set runtime env variables
-        run: export NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE
+        run: export NGINX_CONFIG_TEMPLATE_DIRECTORY=$PWD
       - name: create empty test files
         run: |
           touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE

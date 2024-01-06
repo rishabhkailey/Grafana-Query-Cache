@@ -49,7 +49,15 @@ function genrate_nginx_conf() {
 
 function init() {
     init_variables
+    if [ $exit_code -ne 0 ]; then
+        echo "init variables failed"
+        return 1
+    fi
     genrate_nginx_conf
+    if [ $exit_code -ne 0 ]; then
+        echo "generate nginx conf failed"
+        return 1
+    fi
 }
 
 function config_test() {
@@ -63,23 +71,32 @@ function config_test() {
 function start_nginx() {
     config_test
     if [ $exit_code -ne 0 ]; then
+        echo "nginx config test failed"
         return 1
     fi
     /usr/bin/openresty -g 'daemon off;'
 }
 
-init
+function main() {
+    init
+    if [ $exit_code -ne 0 ]; then
+        echo "init failed"
+        exit 1
+    fi
 
-exit_code=0
-if [ "$1" == "test" ]; then
-    config_test
-    exit_code=$?
-elif [ "$1" == "start" ]; then
-    start_nginx
-    exit_code=$?
-else
-    echo "Valid options are: test and start"
-    exit_code=1
-fi
+    exit_code=0
+    if [ "$1" == "test" ]; then
+        config_test
+        exit_code=$?
+    elif [ "$1" == "start" ]; then
+        start_nginx
+        exit_code=$?
+    else
+        echo "Valid options are: test and start"
+        exit_code=1
+    fi
 
-exit $exit_code
+    exit $exit_code
+}
+
+main
