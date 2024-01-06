@@ -18,7 +18,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: set runtime env variables
         run: export NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE
-      - run: ./entrypoint.sh test
+      - run: |
+          chmod +x ./entrypoint.sh && 
+          ./entrypoint.sh test
 
   nginx-config-ssl-on:
     runs-on: "ubuntu-latest"
@@ -48,8 +50,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: set runtime env variables
         run: export NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE
-      - run: ./entrypoint.sh test
-
+      - run: |
+          chmod +x ./entrypoint.sh && 
+          ./entrypoint.sh test
   nginx-config-ssl-off:
     runs-on: "ubuntu-latest"
     container: 
@@ -81,5 +84,7 @@ jobs:
       - name: create empty test files
         run: |
           touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE
-      - run: ./entrypoint.sh test
+      - run: |
+          chmod +x ./entrypoint.sh && 
+          ./entrypoint.sh test
   # lua-lint:
