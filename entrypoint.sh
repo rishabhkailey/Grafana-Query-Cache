@@ -42,21 +42,23 @@ function genrate_nginx_conf() {
     exit_code=$?
     if [ $exit_code -ne 0 ]; then
         echo "failed to substitute env variables for nginx variable"
-        return 1
+        return $exit_code
     fi
 
 }
 
 function init() {
     init_variables
+    exit_code=$?
     if [ $exit_code -ne 0 ]; then
         echo "init variables failed"
-        return 1
+        return $exit_code
     fi
     genrate_nginx_conf
+    exit_code=$?
     if [ $exit_code -ne 0 ]; then
         echo "generate nginx conf failed"
-        return 1
+        return $exit_code
     fi
 }
 
@@ -64,24 +66,26 @@ function config_test() {
     nginx -t
     if [ $exit_code -ne 0 ]; then
         echo "invalid nginx config"
-        return 1
+        return $exit_code
     fi
 }
 
 function start_nginx() {
     config_test
+    exit_code=$?
     if [ $exit_code -ne 0 ]; then
         echo "nginx config test failed"
-        return 1
+        return $exit_code
     fi
     /usr/bin/openresty -g 'daemon off;'
 }
 
 function main() {
     init
+    exit_code=$?
     if [ $exit_code -ne 0 ]; then
         echo "init failed"
-        exit 1
+        exit $exit_code
     fi
 
     exit_code=0
