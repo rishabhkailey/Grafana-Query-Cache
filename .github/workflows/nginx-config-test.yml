@@ -85,11 +85,28 @@ jobs:
       - name: set runtime env variables
         run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
       - name: create empty test files
-        run: |
-          touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE
+        run: touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE
       - run: |
           echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
           chmod +x ./entrypoint.sh && \
           ./entrypoint.sh test
-
+  
+  test:
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+    env: 
+      DOCKER_COMPOSE_VERSION: v2.23.3
+    steps:
+      - name: docker compose cli
+        run: |
+          wget https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m) -O /usr/bin/docker-compose && \
+          chmod +x /usr/bin/docker-compose
+      - name: start containers
+        run: docker-compose -f test/docker-compose.yml up -d --build
+      - name: clear test cache
+        run: docker exec test-integration-test-1 go clean -testcache
+      - name: run test
+        run: docker exec test-integration-test-1 go test ./
+  
+  # todo
   # lua-lint:

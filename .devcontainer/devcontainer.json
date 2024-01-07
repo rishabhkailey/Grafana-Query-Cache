@@ -12,7 +12,12 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"sumneko.lua"
+				"sumneko.lua",
+				"github.vscode-github-actions",
+				"redhat.vscode-yaml",
+				"ms-azuretools.vscode-docker",
+				"golang.Go",
+				"golang.go"
 			]
 		}
 	}

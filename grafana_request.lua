@@ -134,13 +134,14 @@ function check_user_access(grafana_base_url, data_sources, cookie_header_value, 
     end
     request_url = request_url .. string.format("/api/datasources/uid/%s/health", data_source)
     ngx.log(ngx.STDERR, "auth_request url", request_url)
+    ngx.log(ngx.STDERR, "auth_request authorization_header", authorization_header_value)
 
     local request_headeres = {}
     if string.len(cookie_header_value) ~= 0 then
       request_headeres["Cookie"] = cookie_header_value
     end
     if string.len(authorization_header_value) ~= 0 then
-      request_headeres["Authorization"] = cookie_header_value
+      request_headeres["Authorization"] = authorization_header_value
     end
 
     local res, err = http_client:request_uri(request_url, {

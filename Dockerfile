@@ -10,4 +10,5 @@ COPY entrypoint.sh /opt/entrypoint.sh
 ENV LUA_CPATH="/usr/local/openresty/lualib/?.so;/usr/local/openresty/site/lualib/?.so;"
 ENV LUA_PATH="/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/etc/nginx/conf.d/?.lua;"
 
-CMD ["/opt/entrypoint.sh"]
+RUN chmod u+x /opt/entrypoint.sh
+CMD ["/opt/entrypoint.sh", "start"]
