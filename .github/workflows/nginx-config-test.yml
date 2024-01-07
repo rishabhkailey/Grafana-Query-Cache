@@ -99,10 +99,10 @@ jobs:
     steps:
       - name: docker compose cli
         run: |
-          wget https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m) -O /usr/bin/docker-compose && \
-          chmod +x /usr/bin/docker-compose
+          wget https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m) -O /opt/docker-compose && \
+          chmod +x /opt/docker-compose &&
       - name: start containers
-        run: docker-compose -f test/docker-compose.yml up -d --build
+        run: /opt/docker-compose -f test/docker-compose.yml up -d --build
       - name: clear test cache
         run: docker exec test-integration-test-1 go clean -testcache
       - name: run test
