@@ -100,7 +100,7 @@ jobs:
       - name: docker compose cli
         run: |
           wget https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m) -O /opt/docker-compose && \
-          chmod +x /opt/docker-compose &&
+          chmod +x /opt/docker-compose
       - name: start containers
         run: /opt/docker-compose -f test/docker-compose.yml up -d --build
       - name: clear test cache
