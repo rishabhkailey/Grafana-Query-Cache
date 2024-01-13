@@ -29,13 +29,9 @@ local resty_md5 = require "resty.md5";
 local resty_string = require "resty.string";
 
 
--- luarocks install lua-resty-http
--- 30 mins
-local time_bucket_length_ms = 30 * 60 * 1000;
--- 10 mins
-local time_frame_bucket_length_ms = 10 * 60 * 1000;
-
-
+-- get_datasource_uids
+--- @param queries table
+--- @return table
 local function get_datasource_uids(queries)
   -- to avoid duplicates
   local data_source_already_added = {}
@@ -43,7 +39,7 @@ local function get_datasource_uids(queries)
   for _, query in pairs(queries) do
     if type(query.datasource) ~= "table" and type(query.datasource.uid) ~= "string" and string.len(query.datasource.uid) ~= 0 then
       error("invalid request body, unable to get datasource uid")
-      return
+      return data_sources
     end
     if not data_source_already_added[query.datasource.uid] then
       table.insert(data_sources, query.datasource.uid)
@@ -53,25 +49,74 @@ local function get_datasource_uids(queries)
   return data_sources
 end
 
-local function tomd5(input)
-  -- -- todo remove this
-  -- return input
-  local md5 = resty_md5:new()
-    if not md5 then
-        error("failed to create md5 object")
-        return
+--- sorted_table_json_encode returns the json encoding of the table with sorted keys
+--- @param input_table table
+--- @return string
+local function sorted_table_json_encode(input_table) 
+  
+  local sorted_keys = {}
+  for key in pairs(input_table) do table.insert(sorted_keys, key) end
+  table.sort(sorted_keys)
+  
+  local output = ""
+  output = output .. "{"
+  for _, key in pairs(sorted_keys) do
+    local encoded_value = ""
+    if type(input_table[key]) == "table" then
+      encoded_value = sorted_table_json_encode(input_table[key])
+    else
+      encoded_value = json.encode(input_table[key])
     end
 
-    local ok = md5:update(input)
-    if not ok then
-        error("failed to add data to md5")
-        return
+    output = output .. string.format("\"%s\": %s", key, encoded_value)
+    if next(sorted_keys, _) ~= nil then
+      output = output .. ","
     end
-    return resty_string.to_hex(md5:final())
+  end
+  output = output .. "}"
+  return output
 end
 
--- cache_key, property_name and property_value should be strings
--- returns the new cache key after adding the mentioned property
+--- sorted_json_encode returns the json encoding of the queries with sorted query keys
+--- this might not be the correct json encoding it might convert array to map. but this will be consistent and thats what we want
+--- @param queries table
+--- @return string
+local function sorted_queries_json_encode(queries)
+  local output = ""
+  output = output .. "["
+  for _, query in pairs(queries) do
+    output = output .. sorted_table_json_encode(query)
+    if next(queries, _) ~= nil then
+      output = output .. ","
+    end
+  end
+  output = output .. "]"
+  return output
+end
+
+--- @param input string
+--- @return string
+local function tomd5(input)
+  local md5 = resty_md5:new()
+  if not md5 then
+      error("failed to create md5 object")
+      return ""
+  end
+
+  local ok = md5:update(input)
+  if not ok then
+      error("failed to add data to md5")
+      return ""
+  end
+  return resty_string.to_hex(md5:final())
+end
+
+-- adds key value pair in the cache key. 
+-- format = key1=value1;key2=value2
+--- @param cache_key string
+--- @param property_name string
+--- @param property_value string
+--- @return string
 local function add_property_in_cache_key(cache_key, property_name, property_value)
   if string.len(cache_key) ~= 0 then
     cache_key = cache_key .. ";"
@@ -80,33 +125,58 @@ local function add_property_in_cache_key(cache_key, property_name, property_valu
   return cache_key
 end
 
-local function get_grafana_query_cache_key(to, from, queries)
+--- get_grafana_query_cache_key returns the cache key for the request
+--- @param to string
+--- @param from string
+--- @param queries table
+--- @return string
+local function get_grafana_query_cache_key(to, from, queries, time_bucket_length_ms, time_frame_bucket_length_ms, max_data_points_bucket_length)
   local cache_key = ""
 
-  local time_bucket_number = math.floor(
+  local time_bucket_number = math.ceil(
     tonumber(to) / time_bucket_length_ms
   )
   cache_key = add_property_in_cache_key(cache_key, "time_bucket_number", tostring(time_bucket_number))
 
-  local time_frame_bucket_number = math.floor(
+  local time_frame_bucket_number = math.ceil(
     (tonumber(to) - tonumber(from)) / time_frame_bucket_length_ms
   )
   cache_key = add_property_in_cache_key(cache_key, "time_frame_bucket_number", tostring(time_frame_bucket_number))
 
-  local queries = tomd5(json.encode(queries))
-  cache_key = add_property_in_cache_key(cache_key, "queries", queries)
+  -- if queries
+  for _, query in pairs(queries) do
+    if type(query.maxDataPoints) ~= "nil" and tonumber(query.maxDataPoints) ~= "nil" then
+      query.maxDataPoints = math.ceil(
+        tonumber(query.maxDataPoints) / max_data_points_bucket_length
+      )
+    end
+  end
+  local queries_hash = tomd5(sorted_queries_json_encode(queries))
+  cache_key = add_property_in_cache_key(cache_key, "queries", queries_hash)
 
   return cache_key
 end
 
-
-function get_cache_key_and_datasource_uids(request_body)
+--- get_cache_key_and_datasource_uids returns the cache key and table of datasource uids
+--- @param request_body string
+--- @param acceptable_time_delta_seconds number
+--- @param acceptable_time_range_delta_seconds number
+--- @param acceptable_max_points_delta number
+--- @return string, table
+function get_cache_key_and_datasource_uids(request_body, acceptable_time_delta_seconds, acceptable_time_range_delta_seconds, acceptable_max_points_delta)
   local parsed_request_body = json.decode(request_body)
   if type(parsed_request_body) ~= "table" or tonumber(parsed_request_body.to) == nil or tonumber(parsed_request_body.from) == nil or type(parsed_request_body.queries) ~= "table" then
-    return error("invalid request body")
+    error("invalid request body")
+    return "", {}
   end
-  local cache_key = get_grafana_query_cache_key(parsed_request_body.to, parsed_request_body.from,
-    parsed_request_body.queries)
+  local cache_key = get_grafana_query_cache_key(
+    parsed_request_body.to, 
+    parsed_request_body.from,
+    parsed_request_body.queries, 
+    acceptable_time_delta_seconds * 1000, 
+    acceptable_time_range_delta_seconds * 1000, 
+    acceptable_max_points_delta
+  )
   -- print(#parsed_request_body.queries)
   local data_sources = get_datasource_uids(parsed_request_body.queries)
   return cache_key, data_sources
@@ -117,13 +187,13 @@ end
 --- @param data_sources table
 --- @param cookie_header_value string
 --- @param authorization_header_value string
----@return boolean
+--- @return boolean
 function check_user_access(grafana_base_url, data_sources, cookie_header_value, authorization_header_value)
   local http = require "resty.http"
   local http_client = http.new()
 
   if string.len(grafana_base_url) == 0 then
-    error("")
+    error("empty grafana base url")
     return false
   end
 
@@ -133,8 +203,6 @@ function check_user_access(grafana_base_url, data_sources, cookie_header_value, 
       request_url = request_url .. "/"
     end
     request_url = request_url .. string.format("/api/datasources/uid/%s/health", data_source)
-    ngx.log(ngx.STDERR, "auth_request url", request_url)
-    ngx.log(ngx.STDERR, "auth_request authorization_header", authorization_header_value)
 
     local request_headeres = {}
     if string.len(cookie_header_value) ~= 0 then
@@ -149,10 +217,8 @@ function check_user_access(grafana_base_url, data_sources, cookie_header_value, 
       headers = request_headeres
     })
     if err ~= nil or res == nil then
-      ngx.log(ngx.STDERR, err, res)
       return false
     end
-    ngx.log(ngx.STDERR, "auth_requst response status", res.status)
     if res.status == nil or type(res.status) ~= "number" or res.status ~= 200 then
       return false
     end
@@ -161,7 +227,7 @@ function check_user_access(grafana_base_url, data_sources, cookie_header_value, 
 end
 
 xpcall(function()
-  local cache_key, data_sources = get_cache_key_and_datasource_uids(requestBody)
+  local cache_key, data_sources = get_cache_key_and_datasource_uids(requestBody, 123124, 123123, 123)
   if type(cache_key) ~= "string" or type(data_sources) ~= "table" then
     error("received nil data from get_cache_key_and_datasource_uids")
     return
@@ -178,5 +244,6 @@ end)
 
 return {
   get_cache_key_and_datasource_uids = get_cache_key_and_datasource_uids,
-  check_user_access = check_user_access
+  check_user_access = check_user_access,
+  sorted_queries_json_encode = sorted_queries_json_encode
 }

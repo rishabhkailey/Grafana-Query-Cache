@@ -2,7 +2,6 @@
 
 
 ## Supported Environment variables
-<!-- todo time variance, debug logs allowed? -->
 | Environment Variable | Default Value | Description |
 | -- | -- | -- |
 | GRAFANA_HOST   | `localhost:3000`   |  Specifies the hostname and port of the upstream Grafana instance to connect to.  |
@@ -24,3 +23,9 @@
 | CLIENT_MAX_BODY_SIZE | `5m`              | Sets the maximum allowed size of client request bodies, preventing excessive resource consumption.                    |
 | DEBUG_IP_CADR | `127.0.0.1/32`              | Controls IPs receiving debug headers (X-Cache-Status, X-Cache-Key, X-Cache-Access-Denied). Set to 127.0.0.1/32 for local or 0.0.0.0/0 for all IPs. |
 | MIN_REQUEST_COUNT | `2` | Defines the minimum request threshold for caching individual requests. Requests must exceed this threshold to become eligible for caching. Controls cache efficiency and prevents premature caching of infrequently accessed content. |
+| ACCEPTABLE_TIME_DELTA_SECONDS | `1799` | Determines the size of time-based buckets for caching. Requests within the same bucket (up to 1799 seconds apart) will share a cache key and value. |
+| ACCEPTABLE_TIME_RANGE_DELTA_SECONDS | `599` | Determines the size of time range-based buckets for caching. Requests with overlapping time ranges within the bucket (up to 599 seconds apart) will share a cache key and value. | 
+| ACCEPTABLE_MAX_POINTS_DELTA | `259` | Determines the size of data points-based buckets for caching. Requests with data point differences within the bucket (up to 259 points apart) will share a cache key and value. |
+
+
+<!-- todo why we have weird number value  for time delta variables -->
