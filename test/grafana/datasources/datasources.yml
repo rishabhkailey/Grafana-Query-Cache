@@ -4,6 +4,21 @@ deleteDatasources:
   - name: Mimir
 
 datasources:
+- name: prometheus-proxied
+  type: prometheus
+  access: proxy
+  orgId: 1
+  url: http://prometheus:9090
+  basicAuth: false
+  isDefault: false
+  version: 1
+  editable: true
+  uid: prometheus-proxied
+  jsonData:
+    enableSecureSocksProxy: true
+    secureSocksProxyUsername: $PROXY_USER
+  secureJsonData:
+    secureSocksProxyPassword: $PROXY_PASSWORD
 - name: prometheus
   type: prometheus
   access: proxy

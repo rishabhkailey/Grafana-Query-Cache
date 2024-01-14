@@ -12,6 +12,7 @@ services:
       - ./grafana/datasources:/etc/grafana/provisioning/datasources
       - ./grafana/dashboards-provisioning:/etc/grafana/provisioning/dashboards
       - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./certs:/certs
     env_file:
       - .env
     healthcheck:
@@ -26,6 +27,17 @@ services:
       timescaledb:
         condition: service_healthy
 
+  socks5:
+    image: tlstun
+    entrypoint: ["/tlstun"]
+    volumes:
+      - ./certs:/certs
+    command: ["server", "-addr=:1080", "-ca=/certs/ca.pem", "-cert=/certs/server-cert.pem", "-key=/certs/server-key.pem"]
+
+  # socks5-proxy:
+  #   image: serjs/go-socks5-proxy:latest
+  #   env_file: 
+  #     - .env
 
   prometheus:
     image: prom/prometheus:latest
@@ -58,6 +70,7 @@ services:
     depends_on:
       grafana:
         condition: service_healthy
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${LISTEN:-80}/api/health"]
       interval: 5s
