@@ -1,31 +1,7 @@
-local requestBody = [[
-  {
-      "from": "1703631956991",
-      "to": "1703653556991",
-      "queries": [
-        {
-          "refId": "FundCategory",
-          "datasource": {
-            "type": "postgres",
-            "uid": "cebc8c1a-8a2c-4b65-8352-f0cb1982615a"
-          },
-          "rawSql": "select distinct COALESCE(NULLIF(category, ''), 'unknown') from funds;",
-          "format": "table"
-        },
-        {
-          "refId": "FundCategory",
-          "datasource": {
-            "type": "postgres",
-            "uid": "cebc8c1a-8a2c-4b65-8352-f0cb1982615a"
-          },
-          "rawSql": "select distinct COALESCE(NULLIF(category, ''), 'unknown') from funds;",
-          "format": "table"
-        }
-      ]
-    }
-]]
 local json = require "cjson";
-local resty_md5 = require "resty.md5";
+-- resty md5 doesn't work without nginx. (unit test fails due to `luajit: undefined symbol: MD5_Init` error)
+-- local resty_md5 = require "resty.md5";
+local md5 = require "md5";
 local resty_string = require "resty.string";
 
 
@@ -97,18 +73,19 @@ end
 --- @param input string
 --- @return string
 local function tomd5(input)
-  local md5 = resty_md5:new()
-  if not md5 then
-      error("failed to create md5 object")
-      return ""
-  end
+  return md5.sumhexa(input)
+  -- local md5 = resty_md5:new()
+  -- if not md5 then
+  --     error("failed to create md5 object")
+  --     return ""
+  -- end
 
-  local ok = md5:update(input)
-  if not ok then
-      error("failed to add data to md5")
-      return ""
-  end
-  return resty_string.to_hex(md5:final())
+  -- local ok = md5:update(input)
+  -- if not ok then
+  --     error("failed to add data to md5")
+  --     return ""
+  -- end
+  -- return resty_string.to_hex(md5:final())
 end
 
 -- adds key value pair in the cache key. 
@@ -126,6 +103,7 @@ local function add_property_in_cache_key(cache_key, property_name, property_valu
 end
 
 --- get_grafana_query_cache_key returns the cache key for the request
+--- it consider time (to), time frame (to - from) and queries 
 --- @param to string
 --- @param from string
 --- @param queries table
@@ -226,24 +204,54 @@ function check_user_access(grafana_base_url, data_sources, cookie_header_value, 
   return true
 end
 
-xpcall(function()
-  local cache_key, data_sources = get_cache_key_and_datasource_uids(requestBody, 123124, 123123, 123)
-  if type(cache_key) ~= "string" or type(data_sources) ~= "table" then
-    error("received nil data from get_cache_key_and_datasource_uids")
-    return
-  end
-  print(cache_key)
-  for _, datasource in pairs(data_sources) do
-    print(datasource)
-  end
-end, function(err)
-  print("failed", err)
-end)
+-- local requestBody = [[
+--   {
+--       "from": "1703631956991",
+--       "to": "1703653556991",
+--       "queries": [
+--         {
+--           "refId": "FundCategory",
+--           "datasource": {
+--             "type": "postgres",
+--             "uid": "cebc8c1a-8a2c-4b65-8352-f0cb1982615a"
+--           },
+--           "rawSql": "select distinct COALESCE(NULLIF(category, ''), 'unknown') from funds;",
+--           "format": "table"
+--         },
+--         {
+--           "refId": "FundCategory",
+--           "datasource": {
+--             "type": "postgres",
+--             "uid": "cebc8c1a-8a2c-4b65-8352-f0cb1982615a"
+--           },
+--           "rawSql": "select distinct COALESCE(NULLIF(category, ''), 'unknown') from funds;",
+--           "format": "table"
+--         }
+--       ]
+--     }
+-- ]]
+
+-- xpcall(function()
+--   local cache_key, data_sources = get_cache_key_and_datasource_uids(requestBody, 123124, 123123, 123)
+--   if type(cache_key) ~= "string" or type(data_sources) ~= "table" then
+--     error("received nil data from get_cache_key_and_datasource_uids")
+--     return
+--   end
+--   print(cache_key)
+--   for _, datasource in pairs(data_sources) do
+--     print(datasource)
+--   end
+-- end, function(err)
+--   print("failed", err)
+-- end)
 
 
 
 return {
   get_cache_key_and_datasource_uids = get_cache_key_and_datasource_uids,
   check_user_access = check_user_access,
-  sorted_queries_json_encode = sorted_queries_json_encode
+  -- returning below functions for unit tests. not sure if this is a good approach
+  sorted_queries_json_encode = sorted_queries_json_encode, 
+  get_datasource_uids = get_datasource_uids,
+  get_grafana_query_cache_key = get_grafana_query_cache_key
 }
