@@ -1,0 +1,90 @@
+name: config-test
+
+on: 
+  push: 
+    branches: 
+    - feature/ci-cd
+
+jobs:
+  nginx-config-default-options:
+    runs-on: "ubuntu-latest"
+    container: 
+      image: "openresty/openresty:1.21.4.3-bullseye-fat"
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: set runtime env variables
+        run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - run: |
+          echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
+          chmod +x ./entrypoint.sh && \
+          ./entrypoint.sh test
+
+  nginx-config-ssl-on:
+    runs-on: "ubuntu-latest"
+    container: 
+      image: "openresty/openresty:1.21.4.3-bullseye-fat"
+    timeout-minutes: 5
+    env:
+      GRAFANA_HOST: "localhost:3000"
+      GRAFANA_SCHEME: "http"
+      MAX_CACHE_SIZE: "1g"
+      KEY_ZONE_SIZE: "10m"
+      MAX_INACTIVE_TIME: "10m"
+      CACHE_EXPIRE_TIME: "60m"
+      CACHE_DIRECTORY: "/var/lib/nginx/cache"
+      CACHE_VERSION: "1"
+      SERVER_NAME: "_"
+      LISTEN: "80"
+      SSL: "off"
+      SSL_CERTIFICATE: ""
+      SSL_CERTIFICATE_KEY: ""
+      SSL_PROTOCOLS: ""
+      SSL_CIPHERS: ""
+      SSL_PASSWORD_FILE: ""
+      CLIENT_MAX_BODY_SIZE: "5m"
+      NGINX_CONFIG_OUTPUT_FILE: "/etc/nginx/conf.d/grafana.conf"
+    steps:
+      - uses: actions/checkout@v4
+      - name: set runtime env variables
+        run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - run: |
+          echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
+          chmod +x ./entrypoint.sh && \
+          ./entrypoint.sh test
+    
+  nginx-config-ssl-off:
+    runs-on: "ubuntu-latest"
+    container: 
+      image: "openresty/openresty:1.21.4.3-bullseye-fat"
+    timeout-minutes: 5
+    env: 
+      GRAFANA_HOST: "localhost:3000"
+      GRAFANA_SCHEME: "http"
+      MAX_CACHE_SIZE: "1g"
+      KEY_ZONE_SIZE: "10m"
+      MAX_INACTIVE_TIME: "10m"
+      CACHE_EXPIRE_TIME: "60m"
+      CACHE_DIRECTORY: "/var/lib/nginx/cache"
+      CACHE_VERSION: "1"
+      SERVER_NAME: "_"
+      LISTEN: "80"
+      SSL: "on"
+      SSL_CERTIFICATE: "/cert.crt"
+      SSL_CERTIFICATE_KEY: "/cert.key"
+      SSL_PROTOCOLS: "TLSv1 TLSv1.1 TLSv1.2 TLSv1.3"
+      SSL_CIPHERS: "HIGH:!aNULL:!MD5"
+      SSL_PASSWORD_FILE: "/cert-password"
+      CLIENT_MAX_BODY_SIZE: "5m"
+      NGINX_CONFIG_OUTPUT_FILE: "/etc/nginx/conf.d/grafana.conf"
+    steps:
+      - uses: actions/checkout@v4
+      - name: set runtime env variables
+        run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: create empty test files
+        run: touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE
+      - run: |
+          echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
+          chmod +x ./entrypoint.sh && \
+          ./entrypoint.sh test
+  

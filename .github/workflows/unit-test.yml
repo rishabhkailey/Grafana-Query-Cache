@@ -1,0 +1,28 @@
+name: config-test
+
+on: 
+  push: 
+    branches: 
+    - feature/ci-cd
+
+jobs:
+  unit-test:
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+    container: 
+      image: "openresty/openresty:1.21.4.3-bullseye-fat"
+    env:
+      LUA_CPATH: "/usr/local/openresty/lualib/?.so;/usr/local/openresty/site/lualib/?.so;/usr/local/lib/lua/5.1/?.so;"
+      LUA_PATH: "/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/lib/lua/5.1?.lua;/usr/local/share/lua/5.1/?.lua;"
+    steps:
+      - name: install required packages
+        run: 
+          |
+          apt update && apt install -y luarocks && \ 
+          luarocks install luaunit && luarocks install md5
+      - name: add github workspace in the LUA_PATH variable
+        run: echo "LUA_PATH=$LUA_PATH;$GITHUB_WORKSPACE/?.lua" >> "$GITHUB_ENV"
+      - name: test
+        run: echo $LUA_PATH
+      - name: run tests
+        run: luajit unit_test.lua

@@ -1,0 +1,25 @@
+name: config-test
+
+on: 
+  push: 
+    branches: 
+    - feature/ci-cd
+
+jobs:
+  integration-test:
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+    env: 
+      DOCKER_COMPOSE_VERSION: v2.23.3
+    steps:
+      - name: docker compose cli
+        run: |
+          wget https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m) -O /opt/docker-compose && \
+          chmod +x /opt/docker-compose
+      - uses: actions/checkout@v4
+      - name: start containers
+        run: /opt/docker-compose -f test/docker-compose.yml up -d --build
+      - name: clear test cache
+        run: docker exec test-integration-test-1 go clean -testcache
+      - name: run test
+        run: docker exec test-integration-test-1 go test -v ./
