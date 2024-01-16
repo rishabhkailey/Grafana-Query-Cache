@@ -1,4 +1,4 @@
-name: config-test
+name: unit-test
 
 on: 
   push: 
@@ -12,8 +12,8 @@ jobs:
     container: 
       image: "openresty/openresty:1.21.4.3-bullseye-fat"
     env:
-      LUA_CPATH: "/usr/local/openresty/lualib/?.so;/usr/local/openresty/site/lualib/?.so;/usr/local/lib/lua/5.1/?.so;"
-      LUA_PATH: "/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/lib/lua/5.1?.lua;/usr/local/share/lua/5.1/?.lua;"
+      LUA_CPATH: ";;/usr/local/openresty/lualib/?.so;/usr/local/openresty/site/lualib/?.so;/usr/local/lib/lua/5.1/?.so;"
+      LUA_PATH: ";;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/lib/lua/5.1?.lua;/usr/local/share/lua/5.1/?.lua;"
     steps:
       - name: install required packages
         run: 

@@ -1,4 +1,4 @@
-name: config-test
+name: integration-test
 
 on: 
   push: 
