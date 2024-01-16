@@ -18,8 +18,8 @@ jobs:
       - name: install required packages
         run: 
           |
-          apt update && apt install -y luarocks && \ 
-          luarocks install luaunit && luarocks install md5
+            apt update && apt install -y luarocks && \
+            luarocks install luaunit && luarocks install md5
       - name: add github workspace in the LUA_PATH variable
         run: echo "LUA_PATH=$LUA_PATH;$GITHUB_WORKSPACE/?.lua" >> "$GITHUB_ENV"
       - name: test
