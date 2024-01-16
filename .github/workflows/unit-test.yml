@@ -22,7 +22,6 @@ jobs:
             luarocks install luaunit && luarocks install md5
       - name: add github workspace in the LUA_PATH variable
         run: echo "LUA_PATH=$LUA_PATH;$GITHUB_WORKSPACE/?.lua" >> "$GITHUB_ENV"
-      - name: test
-        run: echo $LUA_PATH
+      - uses: actions/checkout@v4
       - name: run tests
         run: luajit unit_test.lua
