@@ -1,0 +1,29 @@
+name: Container Image scan
+
+on:
+  push:
+    branches:
+      - feature/ci-cd
+
+env:
+  IMAGE_NAME: rishabhveer/grafana-query-cache
+  REGISTRY: docker.io
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build:
+    name: trivy
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build an image from Dockerfile
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@f3d98514b056d8c71a3552e8328c225bc7f6f353
+        with:
+          image-ref: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+          format: "table"
+          ignore-unfixed: true
+          vuln-type: "os,library"
