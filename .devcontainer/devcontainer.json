@@ -13,7 +13,9 @@
 		"vscode": {
 			"extensions": [
 				"sumneko.lua",
-				"actboy168.lua-debug"
+				"actboy168.lua-debug",
+				"golang.Go",
+				"golang.go"
 			]
 		}
 	}

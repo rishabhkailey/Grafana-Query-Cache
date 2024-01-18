@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "launch Integration tests",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${workspaceFolder}/test",
+            "envFile": "${workspaceRoot}/test/.env",
+            // "args": [
+            //     "-test.run",
+            //     "MyTestFunction"
+            // ]
+        },
+        {
             "type": "lua",
             "request": "launch",
             "name": "Debug Unit tests",

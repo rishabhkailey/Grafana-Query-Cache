@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  grafana:
+    image: grafana/grafana:10.2.3-ubuntu
+    entrypoint:
+      - /usr/share/grafana/bin/grafana-server
+      - --homepath=/usr/share/grafana
+      - --config=/etc/grafana-config/grafana.ini
+    volumes:
+      - ./grafana/config:/etc/grafana-config
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/dashboards-provisioning:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./certs:/certs
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "promtool", "check", "healthy"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
+  timescaledb:
+    image: timescale/timescaledb-ha:pg14-latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready", "-d", "postgres" ]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  grafana-query-cache:
+    build:
+      dockerfile: Dockerfile
+      context: ../
+    env_file:
+      - .env
+    depends_on:
+      grafana:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${LISTEN:-80}/api/health"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
+  integration-test:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    command: ["sleep", "infinity"]
+    depends_on:
+      grafana-query-cache:
+        condition: service_healthy
+    env_file:
+      - .env
