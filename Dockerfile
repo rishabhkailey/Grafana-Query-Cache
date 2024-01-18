@@ -3,7 +3,9 @@ FROM openresty/openresty:1.21.4.3-bullseye-fat
 RUN rm /etc/nginx/conf.d/default.conf || true && \
     apt update && apt install -y luarocks && \
     opm get ledgetech/lua-resty-http && \
-    luarocks install md5
+    luarocks install md5 && \
+    apt remove luarocks --purge -y && apt auto-remove -y 
+# possible other fix
 
 COPY grafana_request.lua /usr/local/openresty/lualib
 COPY grafana.conf ssl-conf.sh /etc/nginx/templates/
