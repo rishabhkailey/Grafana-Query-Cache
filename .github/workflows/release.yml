@@ -105,4 +105,14 @@ jobs:
           echo "> Note: This changelog was automatically generated using GitHub Actions. Please review it carefully for accuracy as it may contain some errors." >> release-notes
           sed -n "$SED_EXP" CHANGELOG.md | egrep -v "^## \[v[0-9]+.[0-9]+.[0-9]+\]" >> release-notes
 
+          RELEASE_VERION=$(echo ${{ env.TAG_NAME }} | egrep -o "[^v].*")
+          cat <<EOF >> release-notes
+          ## Docker Image
+          \`\`\`
+          docker pull rishabhveer/grafana-query-cache:${RELEASE_VERION}
+          \`\`\`
+
+          view all available tags for an image on [Docker Hub](https://hub.docker.com/repository/docker/rishabhveer/grafana-query-cache/tags?page=1&ordering=last_updated).
+          EOF
+
           gh release edit ${{ env.TAG_NAME }} --notes-file release-notes
