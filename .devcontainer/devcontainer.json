@@ -15,7 +15,9 @@
 				"sumneko.lua",
 				"actboy168.lua-debug",
 				"golang.Go",
-				"golang.go"
+				"golang.go",
+				"GitHub.vscode-github-actions",
+				"redhat.vscode-yaml"
 			]
 		}
 	}

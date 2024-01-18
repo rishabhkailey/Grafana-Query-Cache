@@ -3,7 +3,8 @@ name: CI
 on:
   push:
     branches:
-      - feature/ci-cd
+      - beta
+      - main
     paths-ignore:
       - CHANGELOG.md
 

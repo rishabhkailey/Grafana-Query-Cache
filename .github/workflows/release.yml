@@ -1,4 +1,4 @@
-name: Container Image Publish
+name: Release
 on:
   push:
     tags:
