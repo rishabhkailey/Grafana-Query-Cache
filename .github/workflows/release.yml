@@ -59,7 +59,7 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
           repository: ${{ env.IMAGE_NAME }}
-          readme-filepath: "./Readme.md"	
+          readme-filepath: "./README.md"	
      
       
   changelog-generator:
