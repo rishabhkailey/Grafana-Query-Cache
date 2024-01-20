@@ -1,9 +1,10 @@
-FROM openresty/openresty:1.21.4.3-bullseye-fat
+FROM openresty/openresty:1.25.3.1-0-bookworm-fat
 
 RUN rm /etc/nginx/conf.d/default.conf || true && \
-    apt update && apt install -y luarocks && \
-    opm get ledgetech/lua-resty-http && \
-    luarocks install md5
+    apt update && apt install -y luarocks=3.8.0+dfsg1-1 gettext-base=0.21-12 && \
+    opm get ledgetech/lua-resty-http=0.17.1 && \
+    luarocks install md5 1.3-1 && \
+    apt-get remove -y --purge luarocks && apt autoremove -y
 
 COPY grafana_request.lua /usr/local/openresty/lualib
 COPY grafana.conf ssl-conf.sh /etc/nginx/templates/
