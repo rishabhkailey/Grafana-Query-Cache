@@ -20,7 +20,7 @@ Grafana Query Cache is an Nginx-powered proxy that accelerates dashboard loading
 
 ## How it works
 1. (optional) label grafana data panel using comments in query.
-![./images/panel-labels-example-01.png](./docs/images/panel-labels-example-01.png)
+![./docs/images/panel-labels-example-01.webp](./docs/images/panel-labels-example-01.webp)
 2. configure cache rules 
     ```yaml
     # default cache config for query requests that either have no labels or whose labels don't match any of the explicitly defined cache rules
