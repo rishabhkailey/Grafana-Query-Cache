@@ -175,7 +175,7 @@ function check_user_access(grafana_base_url, data_sources, cookie_header_value, 
     if request_url:sub(-1) == "/" then
       request_url = request_url .. "/"
     end
-    request_url = request_url .. string.format("/api/datasources/uid/%s/health", data_source)
+    request_url = request_url .. string.format("/api/datasources/uid/%s", data_source)
 
     local request_headeres = {}
     if string.len(cookie_header_value) ~= 0 then
