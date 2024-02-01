@@ -12,7 +12,7 @@ jobs:
   nginx-config-test-default-options:
     runs-on: "ubuntu-latest"
     container: 
-      image: "openresty/openresty:1.21.4.3-bullseye-fat"
+      image: "openresty/openresty:1.25.3.1-0-bookworm-fat"
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
   nginx-config-test-ssl-on:
     runs-on: "ubuntu-latest"
     container: 
-      image: "openresty/openresty:1.21.4.3-bullseye-fat"
+      image: "openresty/openresty:1.25.3.1-0-bookworm-fat"
     timeout-minutes: 5
     env:
       GRAFANA_HOST: "localhost:3000"
@@ -59,7 +59,7 @@ jobs:
   nginx-config-test-ssl-off:
     runs-on: "ubuntu-latest"
     container: 
-      image: "openresty/openresty:1.21.4.3-bullseye-fat"
+      image: "openresty/openresty:1.25.3.1-0-bookworm-fat"
     timeout-minutes: 5
     env: 
       GRAFANA_HOST: "localhost:3000"
