@@ -1,0 +1,11 @@
+{
+    "Lua.diagnostics.globals": [
+        "ngx"
+    ],
+    "yaml.schemas": {
+        "https://json.schemastore.org/yamllint.json": [
+            "file:///workspaces/Grafana-Query-Cache/cache_rules.yaml",
+            "file:///workspaces/Grafana-Query-Cache/test/cache_rules.yaml"
+        ]
+    }
+}

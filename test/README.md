@@ -3,7 +3,7 @@
 1. Start Grafana, Prometheus, and TimescaleDB:
     ```bash
     cd test
-    docker compose up -d
+    docker compose up -d --build
     ```
 * Create a network for VS Code devcontainer (if applicable):
     ```bash  

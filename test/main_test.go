@@ -154,7 +154,7 @@ func (config config) sendPrometheusQueryRequest(
 	}
 	{
 		body := string(requestBodyBytes)
-		fmt.Println(body)
+		// fmt.Println(body)
 		_ = body
 	}
 	req, err := http.NewRequest("POST", requestUrl, bytes.NewReader(requestBodyBytes))
@@ -219,10 +219,6 @@ func TestMinUses(t *testing.T) {
 		assert.Fail(t, "did not get cache hit after min uses")
 		return
 	}
-}
-
-func TestPrometheusCache(t *testing.T) {
-
 }
 
 func TestBasicAuth(t *testing.T) {
@@ -335,5 +331,51 @@ func TestCookieAuth(t *testing.T) {
 	if !assert.Equal(t, "HIT", response.Header.Get("X-Cache-Status"), "TestBasicAuth") {
 		assert.Fail(t, "did not get cache hit after min uses")
 		return
+	}
+}
+
+func TestQueryLabels(t *testing.T) {
+	tests := []struct {
+		name                  string
+		queryPrefix           string
+		expectedCacheConfigId string
+	}{
+		{
+			name:                  "no-lables",
+			queryPrefix:           "",
+			expectedCacheConfigId: "default",
+		},
+		{
+			name:                  "valid-labels-01",
+			queryPrefix:           "# datasource=timescaledb;\n",
+			expectedCacheConfigId: "timescaledb",
+		},
+		{
+			name:                  "valid-labels-02",
+			queryPrefix:           "# datasource=prometheus; cacheable=true;\n",
+			expectedCacheConfigId: "prometheus",
+		},
+	}
+	for _, test := range tests {
+		promReqBody := newPrometheusRequestBody(time.Now(), 30*time.Minute)
+		promReqBody.Queries[0].Expr = test.queryPrefix + promReqBody.Queries[0].Expr
+
+		response, err := c.sendPrometheusQueryRequest(promReqBody, &grafanaBasicAuth{
+			User:     c.grafanaUser,
+			Password: c.grafanaPassword,
+		}, nil)
+		if !assert.NoError(t, err, "TestBasicAuth") {
+			assert.Fail(t, "prometheus query request failed", err)
+			return
+		}
+		if !assert.Equal(t, http.StatusOK, response.StatusCode, "TestBasicAuth") {
+			assert.Fail(t, fmt.Sprintf("prometheus request return %d status code but expected %d", response.StatusCode, http.StatusUnauthorized), err)
+			return
+		}
+		if !assert.Equal(t, test.expectedCacheConfigId, response.Header.Get("X-Cache-Config-ID"), "TestBasicAuth") {
+			assert.Fail(t, "did not get cache hit after min uses")
+			return
+		}
+
 	}
 }

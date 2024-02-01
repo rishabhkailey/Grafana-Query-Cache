@@ -58,6 +58,8 @@ services:
     depends_on:
       grafana:
         condition: service_healthy
+    volumes:
+      - ./cache_rules.yaml:/etc/grafana-query-cache/cache_rules.yaml
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${LISTEN:-80}/api/health"]
