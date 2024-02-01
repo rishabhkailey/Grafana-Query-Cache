@@ -95,7 +95,7 @@ jobs:
     runs-on: "ubuntu-latest"
     timeout-minutes: 10
     container: 
-      image: "openresty/openresty:1.21.4.3-bullseye-fat"
+      image: "openresty/openresty:1.25.3.1-0-bookworm-fat"
     env:
       LUA_CPATH: ";;/usr/local/openresty/lualib/?.so;/usr/local/openresty/site/lualib/?.so;/usr/local/lib/lua/5.1/?.so;"
       LUA_PATH: ";;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/lib/lua/5.1?.lua;/usr/local/share/lua/5.1/?.lua;"
