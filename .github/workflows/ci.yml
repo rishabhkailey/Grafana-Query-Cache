@@ -18,8 +18,9 @@ jobs:
       NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
-      - &install_dockerize
-        name: install dockerize
+      # Anchors are not currently supported
+      # - &install_dockerize
+      - name: install dockerize
         run: |
           apt-get update \
           && apt-get install -y wget \
@@ -56,7 +57,13 @@ jobs:
       NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
-      - *install_dockerize
+      # Anchors are not currently supported
+      # - *install_dockerize
+      - name: install dockerize
+        run: |
+          apt-get update \
+          && apt-get install -y wget \
+          && wget -O - https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz | tar xzf - -C /usr/local/bin  
       - name: test config
         run: |
           chmod +x ./scripts/entrypoint.sh && \
@@ -89,7 +96,13 @@ jobs:
       NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
-      - *install_dockerize
+      # Anchors are not currently supported
+      # - *install_dockerize
+      - name: install dockerize
+        run: |
+          apt-get update \
+          && apt-get install -y wget \
+          && wget -O - https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz | tar xzf - -C /usr/local/bin  
       - name: create empty test files
         run: touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE
       - name: test config
