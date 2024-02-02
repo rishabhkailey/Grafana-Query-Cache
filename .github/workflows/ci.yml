@@ -18,8 +18,8 @@ jobs:
       NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
-      - name: set runtime env variables
-        run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: install required debian packages
+        run: apt update && apt install -y gettext-base=0.21-12
       - name: test config
         run: |
           chmod +x ./scripts/entrypoint.sh && \
@@ -52,6 +52,8 @@ jobs:
       NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
+      - name: install required debian packages
+        run: apt update && apt install -y gettext-base=0.21-12
       - name: test config
         run: |
           chmod +x ./scripts/entrypoint.sh && \
@@ -86,6 +88,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: create empty test files
         run: touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE
+      - name: install required debian packages
+        run: apt update && apt install -y gettext-base=0.21-12
       - name: test config
         run: |
           chmod +x ./scripts/entrypoint.sh && \
