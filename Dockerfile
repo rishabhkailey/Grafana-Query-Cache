@@ -2,7 +2,7 @@ FROM openresty/openresty:1.25.3.1-0-bookworm-fat
 
 ENV DOCKERIZE_VERSION v0.7.0
 RUN rm /etc/nginx/conf.d/default.conf || true && \
-    apt update && apt install -y luarocks=3.8.0+dfsg1-1 libyaml-dev=0.2.5-1 wget=1.21.3-1+b2 \
+    apt update && apt install -y luarocks=3.8.0+dfsg1-1 libyaml-dev=0.2.5-1 wget \
     && wget -O - https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz | tar xzf - -C /usr/local/bin
 
 WORKDIR /etc/grafana-query-cache
