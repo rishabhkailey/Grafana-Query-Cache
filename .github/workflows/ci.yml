@@ -20,8 +20,8 @@ jobs:
         run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
       - run: |
           echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
-          chmod +x ./entrypoint.sh && \
-          ./entrypoint.sh test
+          chmod +x ./scripts/entrypoint.sh && \
+          ./scripts/entrypoint.sh test
 
   nginx-config-test-ssl-on:
     runs-on: "ubuntu-latest"
@@ -53,8 +53,8 @@ jobs:
         run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
       - run: |
           echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
-          chmod +x ./entrypoint.sh && \
-          ./entrypoint.sh test
+          chmod +x ./scripts/entrypoint.sh && \
+          ./scripts/entrypoint.sh test
     
   nginx-config-test-ssl-off:
     runs-on: "ubuntu-latest"
@@ -88,8 +88,8 @@ jobs:
         run: touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE
       - run: |
           echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
-          chmod +x ./entrypoint.sh && \
-          ./entrypoint.sh test
+          chmod +x ./scripts/entrypoint.sh && \
+          ./scripts/entrypoint.sh test
 
   unit-test:      
     runs-on: "ubuntu-latest"
@@ -101,6 +101,8 @@ jobs:
       LUA_PATH: ";;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/lib/lua/5.1?.lua;/usr/local/share/lua/5.1/?.lua;"
     steps:
       - uses: actions/checkout@v4
+      - name: install required debian packages
+        run: apt update && apt install -y luarocks=3.8.0+dfsg1-1 gettext-base=0.21-12 libyaml-dev=0.2.5-1
       - name: install required packages
         run: "/bin/bash ./scripts/install-packages.sh rocks.txt rocks.dev.txt"
       - name: add github workspace in the LUA_PATH variable
