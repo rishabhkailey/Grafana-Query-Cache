@@ -54,6 +54,5 @@ function table_length(t)
 return {
     check_table_type = check_table_type,
     table_length = table_length,
-    dump = dump,
     check_type = check_type
 }

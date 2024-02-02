@@ -22,9 +22,13 @@
 
 # Run test in ci/cd
 ```bash
-docker compose up -d
-sudo docker exec test-integration-test-1 go clean -testcache
-sudo docker exec test-integration-test-1 go test ./
+# test default scenario
+docker compose --project-name integration_tests -f integration_tests/docker-compose.yml up -d --build
+sudo docker exec integration_tests-integration-test-1 go clean -testcache
+sudo docker exec integration_tests-integration-test-1 go test ./
+
+# for testing different scenario
+DOCKER_COMPOSE_ENV_FILE=.env.invalidate-cache-dockernetwork docker compose --project-name integration_tests -f integration_tests/docker-compose.yml up --build -d
 ```
 
 

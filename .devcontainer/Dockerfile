@@ -1,6 +1,6 @@
 FROM openresty/openresty:1.25.3.1-0-bookworm-fat
 
-RUN apt update && apt install -y luarocks=3.8.0+dfsg1-1 gettext-base=0.21-12 libyaml-dev=0.2.5-1 git wget 
+RUN apt update && apt install -y luarocks=3.8.0+dfsg1-1 libyaml-dev=0.2.5-1 git wget 
 
 # go lang for tests
 RUN wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz -O /tmp/go1.21.5.linux-amd64.tar.gz && \

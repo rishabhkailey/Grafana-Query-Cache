@@ -1,8 +1,8 @@
-proxy_cache_path ${CACHE_DIRECTORY} levels=1:2 keys_zone=grafana_query_cache:10m inactive=${MAX_INACTIVE_TIME} max_size=${MAX_CACHE_SIZE};
+proxy_cache_path {{ .Env.CACHE_DIRECTORY }} levels=1:2 keys_zone=grafana_query_cache:10m inactive={{ .Env.MAX_INACTIVE_TIME }} max_size={{ .Env.MAX_CACHE_SIZE }};
 log_format log_including_cache_key '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" "$http_x_forwarded_for" \'"$upstream_cache_status" "$generated_cache_key" "$cache_access_denied" "$cache_config_id"\'';
 
 upstream grafana_server {
-    server ${GRAFANA_HOST};
+    server {{ .Env.GRAFANA_HOST }};
 }
 
 map $upstream_cache_status $cache_found {
@@ -12,7 +12,7 @@ map $upstream_cache_status $cache_found {
 
 # default empty string
 geo $remote_addr $debug { 
-    ${DEBUG_IP_CADR}       "yes"; 
+    {{ .Env.DEBUG_IP_CADR }}       "yes"; 
     # default takes precedence when DEBUG_IP_CADR is set to 0.0.0.0/0 
     # default                 "";
 }
@@ -31,25 +31,37 @@ map $http_upgrade $connection_upgrade {
 
 map $generated_cache_key $cache_key {
     ''      '';
-    default 'v${CACHE_VERSION}_$generated_cache_key';
+    default 'v{{ .Env.CACHE_VERSION }}_$generated_cache_key';
 }
 
 init_by_lua_block {
     -- intialize config
     local config = require "config"
-    config.load_config("$CACHE_RULES_FILE_PATH")
+    config.load_config({{ .Env.CACHE_RULES_FILE_PATH | quote }})
+    
+    local update_cache_key_prefix = require "update_cache_key_prefix"
+    update_cache_key_prefix.update_cache_key_prefix()
 }
 
+lua_shared_dict shared 10m;
 
 server {
-    listen                  ${LISTEN} default_server;
-    server_name             ${SERVER_NAME};
-    client_max_body_size    ${CLIENT_MAX_BODY_SIZE};
+    listen                  {{ .Env.LISTEN }} default_server;
+    server_name             {{ .Env.SERVER_NAME }};
+    client_max_body_size    {{ .Env.CLIENT_MAX_BODY_SIZE }};
 
-    set $grafana_scheme                         $GRAFANA_SCHEME;
-    set $grafana_host                           $GRAFANA_HOST;
+    set $grafana_scheme     {{ .Env.GRAFANA_SCHEME }};
+    set $grafana_host       {{ .Env.GRAFANA_HOST }};
+    {{- if eq .Env.SSL "on" }}
+    ssl_certificate         {{ .Env.SSL_CERTIFICATE | quote }};
+    ssl_certificate_key     {{ .Env.SSL_CERTIFICATE_KEY | quote }};
+    ssl_protocols           {{ .Env.SSL_PROTOCOLS | quote }};
+    ssl_ciphers             {{ .Env.SSL_CIPHERS | quote }};
+    {{- if .Env.SSL_PASSWORD_FILE }}
+    ssl_password_file       {{ .Env.SSL_PASSWORD_FILE | quote }};
+    {{- end }}
+    {{- end }}
 
-    ${SSL_CONFIG}
     # https://github.com/openresty/openresty/blob/master/t/001-resolver.t#L20
     # https://github.com/openresty/lua-resty-redis/issues/159#issuecomment-460101005
     resolver local=on;
@@ -58,9 +70,9 @@ server {
 
         proxy_cache         grafana_query_cache;
         proxy_cache_methods POST;
-        proxy_cache_valid   200 ${CACHE_EXPIRE_TIME};
+        proxy_cache_valid   200 {{ .Env.CACHE_EXPIRE_TIME }};
         
-        proxy_cache_min_uses ${MIN_REQUEST_COUNT};
+        proxy_cache_min_uses {{ .Env.MIN_REQUEST_COUNT }};
 
         # to prevent multiple requests going to origin server immediate after cache expiring
         proxy_cache_lock            on;
@@ -92,7 +104,7 @@ server {
         proxy_cache_bypass  $cache_access_denied;
 
         proxy_set_header    Host    $http_host;
-        proxy_pass          ${GRAFANA_SCHEME}://grafana_server;
+        proxy_pass          {{ .Env.GRAFANA_SCHEME }}://grafana_server;
         
         # https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ignore_headers
         # cache-control header is set to no-store by grafana which avoids caching
@@ -104,7 +116,7 @@ server {
 
     location / {
         proxy_set_header Host $http_host;
-        proxy_pass  ${GRAFANA_SCHEME}://grafana_server;
+        proxy_pass  {{ .Env.GRAFANA_SCHEME }}://grafana_server;
     }
 
     # Proxy Grafana Live WebSocket connections.
@@ -116,4 +128,17 @@ server {
         proxy_pass http://grafana_server;
     }
 
+    {{- if eq .Env.CACHE_INVALIDATE_ENDPOINT_ENABLED "true" }}
+    location /cache/invalidate {
+        allow   {{ .Env.CACHE_INVALIDATE_ENDPOINT_ALLOW_CIDR }};
+        deny    all;
+        limit_except POST {
+            deny  all;
+        }
+        content_by_lua_block {
+            local update_cache_key_prefix = require "update_cache_key_prefix"
+            update_cache_key_prefix.update_cache_key_prefix()
+        }
+    }
+    {{- end }}
 }

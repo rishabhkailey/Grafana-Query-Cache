@@ -18,8 +18,6 @@ jobs:
       NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
-      - name: install required debian packages
-        run: apt update && apt install -y gettext-base=0.21-12
       - name: test config
         run: |
           chmod +x ./scripts/entrypoint.sh && \
@@ -52,8 +50,6 @@ jobs:
       NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
-      - name: install required debian packages
-        run: apt update && apt install -y gettext-base=0.21-12
       - name: test config
         run: |
           chmod +x ./scripts/entrypoint.sh && \
@@ -88,8 +84,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: create empty test files
         run: touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE
-      - name: install required debian packages
-        run: apt update && apt install -y gettext-base=0.21-12
       - name: test config
         run: |
           chmod +x ./scripts/entrypoint.sh && \
@@ -106,7 +100,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: install required debian packages
-        run: apt update && apt install -y luarocks=3.8.0+dfsg1-1 gettext-base=0.21-12 libyaml-dev=0.2.5-1
+        run: apt update && apt install -y luarocks=3.8.0+dfsg1-1 libyaml-dev=0.2.5-1
       - name: install required packages
         run: "/bin/bash ./scripts/install-packages.sh rocks.txt rocks.dev.txt"
       - name: add github workspace in the LUA_PATH variable
@@ -117,8 +111,16 @@ jobs:
   integration-test:
     runs-on: "ubuntu-latest"
     timeout-minutes: 10
+    strategy:
+      matrix:
+        config: [
+          ".env",
+          ".env.invalidate_cache_enabled_for_docker_network",
+          ".env.invalidate_cache_enabled_for_localhost"
+          ]
     env: 
       DOCKER_COMPOSE_VERSION: v2.23.3
+      DOCKER_COMPOSE_ENV_FILE: ${{ matrix.config }}
     steps:
       - name: docker compose cli
         run: |

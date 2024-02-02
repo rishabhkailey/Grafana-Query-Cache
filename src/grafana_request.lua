@@ -160,14 +160,14 @@ end
 --- @param data_sources table
 --- @param cookie_header_value string
 --- @param authorization_header_value string
---- @return boolean
+--- @return boolean user_access
+--- @return string errorMessage
 function check_user_access(grafana_base_url, data_sources, cookie_header_value, authorization_header_value)
   local http = require "resty.http"
   local http_client = http.new()
 
   if string.len(grafana_base_url) == 0 then
-    error("empty grafana base url")
-    return false
+    return false, "empty grafana base url"
   end
 
   for _, data_source in pairs(data_sources) do
@@ -190,13 +190,13 @@ function check_user_access(grafana_base_url, data_sources, cookie_header_value, 
       headers = request_headeres
     })
     if err ~= nil or res == nil then
-      return false
+      return false, "got nil response"
     end
     if res.status == nil or type(res.status) ~= "number" or res.status ~= 200 then
-      return false
+      return false, "non 200 status code"
     end
   end
-  return true
+  return true, ""
 end
 
 ---comment

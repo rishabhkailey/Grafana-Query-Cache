@@ -112,3 +112,5 @@ cache_rules:
 | DEBUG_IP_CADR | `127.0.0.1/32`              | Controls IPs receiving debug headers (X-Cache-Status, X-Cache-Key, X-Cache-Access-Denied). Set to 127.0.0.1/32 for local or 0.0.0.0/0 for all IPs. |
 | MIN_REQUEST_COUNT | `2` | Defines the minimum request threshold for caching individual requests. Requests must exceed this threshold to become eligible for caching. Controls cache efficiency and prevents premature caching of infrequently accessed content. |
 | CACHE_RULES_FILE_PATH | `/etc/grafana-query-cache/cache_rules.yaml` | path of cache rules config file |
+| CACHE_INVALIDATE_ENDPOINT_ENABLED | `false` | Enables an additional endpoint for invalidating the cache. When enabled, a POST request to `/cache/invalidate` will trigger cache invalidation. |
+| CACHE_INVALIDATE_ENDPOINT_ALLOW_CIDR | `` | Defines the whitelisted IP addresses or CIDR ranges allowed to access the cache invalidation endpoint. For localhost usage, consider setting this to `127.0.0.1/32`. |

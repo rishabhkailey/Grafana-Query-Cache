@@ -50,7 +50,7 @@ function set_cache_key()
         authorization_header = ""
     end
 
-    local user_access = grafana_request.check_user_access(
+    local user_access, errorMessage = grafana_request.check_user_access(
         string.format("%s://%s", ngx.var.grafana_scheme, ngx.var.grafana_host), 
         datasource_uids, 
         cookie_header,
@@ -59,8 +59,13 @@ function set_cache_key()
     if user_access == true then
         ngx.var.cache_access_denied = 0
     end
+    local shared_dict = ngx.shared.shared
+    local cache_key_prefix = shared_dict:get("cache_prefix")
+    if tostring(cache_key_prefix) == nil then
+        cache_key_prefix = ""
+    end
 
-    ngx.var.generated_cache_key = generated_cache_key
+    ngx.var.generated_cache_key = tostring(cache_key_prefix) .. "_" .. generated_cache_key
     ngx.log(ngx.DEBUG, "cache key: ", ngx.var.generated_cache_key)
 end
 

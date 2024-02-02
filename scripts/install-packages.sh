@@ -15,7 +15,7 @@ function install_luarock_packages() {
             printf "luarocks install $package_name $package_version\n"
             luarocks install $package_name $package_version
             if [[ "$?" != "0" ]]; then
-                printf "installation of package $package_name $package_version failed"
+                printf "installation of package $package_name $package_version failed\n"
                 exit 1
             fi
         fi
