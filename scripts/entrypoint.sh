@@ -32,7 +32,7 @@ function init_variables() {
 
 function genrate_nginx_conf() {
     if [ "$SSL" = "on" ]; then
-        SSL_CONFIG=$(/bin/bash ${NGINX_CONFIG_TEMPLATE_DIRECTORY}/ssl-conf.sh)
+        SSL_CONFIG=$(/bin/bash ${NGINX_CONFIG_TEMPLATE_DIRECTORY}/generate-ssl-conf.sh)
         exit_code=$?
         if [ $exit_code -ne 0 ]; then
             echo "failed to substitute env variables for ssl config";

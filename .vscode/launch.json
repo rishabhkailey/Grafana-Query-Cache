@@ -9,18 +9,25 @@
             "type": "go",
             "request": "launch",
             "mode": "test",
-            "program": "${workspaceFolder}/test",
-            "envFile": "${workspaceRoot}/test/.env",
-            // "args": [
-            //     "-test.run",
-            //     "MyTestFunction"
-            // ]
+            "program": "${workspaceFolder}/integration_tests",
+            "envFile": "${workspaceRoot}/integration_tests/.env",
         },
         {
             "type": "lua",
             "request": "launch",
             "name": "Debug Unit tests",
+            "program": "${workspaceFolder}/src/unit_test.lua",
+            "env": {
+                "LUA_PATH": ";;/usr/local/share/lua/5.1/?.lua;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/lib/lua/5.1?.lua;/usr/local/share/lua/5.1/?.lua;/workspaces/Grafana-Query-Cache/?.lua;",
+                "LUA_CPATH": ";;/usr/local/openresty/lualib/?.so;/usr/local/openresty/site/lualib/?.so;/usr/local/lib/lua/5.1/?.so;"
+            }
+        },
+        {
+            "type": "lua",
+            "request": "launch",
+            "name": "Lua install packages and run tests",
             "program": "${workspaceFolder}/unit_test.lua",
+            "preLaunchTask": "install-lua-packages",
             "env": {
                 "LUA_PATH": ";;/usr/local/share/lua/5.1/?.lua;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/lib/lua/5.1?.lua;/usr/local/share/lua/5.1/?.lua;/workspaces/Grafana-Query-Cache/?.lua;",
                 "LUA_CPATH": ";;/usr/local/openresty/lualib/?.so;/usr/local/openresty/site/lualib/?.so;/usr/local/lib/lua/5.1/?.so;"

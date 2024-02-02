@@ -100,17 +100,13 @@ jobs:
       LUA_CPATH: ";;/usr/local/openresty/lualib/?.so;/usr/local/openresty/site/lualib/?.so;/usr/local/lib/lua/5.1/?.so;"
       LUA_PATH: ";;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/lib/lua/5.1?.lua;/usr/local/share/lua/5.1/?.lua;"
     steps:
-      - name: install required packages
-        run: 
-          |
-          apt update && apt install -y luarocks=3.8.0+dfsg1-1 gettext-base=0.21-12 libyaml-dev=0.2.5-1 git wget && \
-          opm get ledgetech/lua-resty-http=0.17.1 && \
-          luarocks install luaunit 3.4-1 && luarocks install md5 1.3-1 && luarocks install lyaml 6.2.8-1
-      - name: add github workspace in the LUA_PATH variable
-        run: echo "LUA_PATH=$LUA_PATH;$GITHUB_WORKSPACE/?.lua" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
+      - name: install required packages
+        run: "/bin/bash ./scripts/install-packages.sh rocks.txt rocks.dev.txt"
+      - name: add github workspace in the LUA_PATH variable
+        run: echo "LUA_PATH=$LUA_PATH;$GITHUB_WORKSPACE/src/?.lua" >> "$GITHUB_ENV"
       - name: run tests
-        run: luajit unit_test.lua
+        run: luajit src/unit_test.lua
 
   integration-test:
     runs-on: "ubuntu-latest"
@@ -124,11 +120,11 @@ jobs:
           chmod +x /opt/docker-compose
       - uses: actions/checkout@v4
       - name: start containers
-        run: /opt/docker-compose -f test/docker-compose.yml up -d --build
+        run: /opt/docker-compose --project-name integration_tests -f integration_tests/docker-compose.yml up -d --build
       - name: clear test cache
-        run: docker exec test-integration-test-1 go clean -testcache
+        run: docker exec integration_tests-integration-test-1 go clean -testcache
       - name: run test
-        run: docker exec test-integration-test-1 go test -v ./
+        run: docker exec integration_tests-integration-test-1 go test -v ./
 
   container-image-scan:
     runs-on: ubuntu-latest
