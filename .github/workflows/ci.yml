@@ -14,12 +14,14 @@ jobs:
     container: 
       image: "openresty/openresty:1.25.3.1-0-bookworm-fat"
     timeout-minutes: 5
+    env:
+      NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
       - name: set runtime env variables
         run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
-      - run: |
-          echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
+      - name: test config
+        run: |
           chmod +x ./scripts/entrypoint.sh && \
           ./scripts/entrypoint.sh test
 
@@ -47,12 +49,11 @@ jobs:
       SSL_PASSWORD_FILE: ""
       CLIENT_MAX_BODY_SIZE: "5m"
       NGINX_CONFIG_OUTPUT_FILE: "/etc/nginx/conf.d/grafana.conf"
+      NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
-      - name: set runtime env variables
-        run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
-      - run: |
-          echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
+      - name: test config
+        run: |
           chmod +x ./scripts/entrypoint.sh && \
           ./scripts/entrypoint.sh test
     
@@ -80,14 +81,13 @@ jobs:
       SSL_PASSWORD_FILE: "/cert-password"
       CLIENT_MAX_BODY_SIZE: "5m"
       NGINX_CONFIG_OUTPUT_FILE: "/etc/nginx/conf.d/grafana.conf"
+      NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
-      - name: set runtime env variables
-        run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
       - name: create empty test files
         run: touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE
-      - run: |
-          echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
+      - name: test config
+        run: |
           chmod +x ./scripts/entrypoint.sh && \
           ./scripts/entrypoint.sh test
 
