@@ -1,0 +1,76 @@
+# Changelog
+
+## [Unreleased](https://github.com/rishabhkailey/Grafana-Query-Cache/tree/HEAD)
+
+[Full Changelog](https://github.com/rishabhkailey/Grafana-Query-Cache/compare/v0.2.0...HEAD)
+
+**Implemented enhancements:**
+
+- Fix directory structure [\#37](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/37)
+- Implement Cache Invalidation Endpoint with IP-Restricted Access [\#32](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/32)
+- Improve Grafana query cache flexibility [\#31](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/31)
+- \[Feature request\] Enable conditional caching based on Grafana query comments [\#14](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/14)
+
+**Fixed bugs:**
+
+- Fix issues in Github workflows  [\#33](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/33)
+
+## [v0.2.0](https://github.com/rishabhkailey/Grafana-Query-Cache/tree/v0.2.0) (2024-02-20)
+
+[Full Changelog](https://github.com/rishabhkailey/Grafana-Query-Cache/compare/v0.2.0-beta...v0.2.0)
+
+**Merged pull requests:**
+
+- Beta [\#39](https://github.com/rishabhkailey/Grafana-Query-Cache/pull/39) ([rishabhkailey](https://github.com/rishabhkailey))
+
+## [v0.2.0-beta](https://github.com/rishabhkailey/Grafana-Query-Cache/tree/v0.2.0-beta) (2024-02-02)
+
+[Full Changelog](https://github.com/rishabhkailey/Grafana-Query-Cache/compare/v0.1.0...v0.2.0-beta)
+
+**Closed issues:**
+
+- Title: Wrong released version v1.0.0 - Rolling back and releasing v0.1.0 [\#34](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/34)
+
+## [v0.1.0](https://github.com/rishabhkailey/Grafana-Query-Cache/tree/v0.1.0) (2024-02-01)
+
+[Full Changelog](https://github.com/rishabhkailey/Grafana-Query-Cache/compare/v0.1.0-rc...v0.1.0)
+
+## [v0.1.0-rc](https://github.com/rishabhkailey/Grafana-Query-Cache/tree/v0.1.0-rc) (2024-02-01)
+
+[Full Changelog](https://github.com/rishabhkailey/Grafana-Query-Cache/compare/641dbf897c709528ac3752d0f47048700693cb02...v0.1.0-rc)
+
+**Implemented enhancements:**
+
+- Improve Dockerfile [\#28](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/28)
+- Add Unit Tests for lua [\#12](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/12)
+- Add Integration tests [\#10](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/10)
+- Documentation [\#9](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/9)
+- CI/CD setup using github actions [\#8](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/8)
+- Enable Environment Variable Configuration [\#6](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/6)
+
+**Security fixes:**
+
+- user access verification: Switch auth endpoint to GET Data Source API [\#25](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/25)
+
+**Closed issues:**
+
+- Evaluate Nginx vs. Custom Go Application for Grafana Query Caching [\#5](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/5)
+- POC: Custom proxy cache  [\#3](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/3)
+- POC: Nginx proxy cache [\#1](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/1)
+
+**Merged pull requests:**
+
+- Revert "Merge pull request \#30 from rishabhkailey/v1.1.0-changelog-8c… [\#35](https://github.com/rishabhkailey/Grafana-Query-Cache/pull/35) ([rishabhkailey](https://github.com/rishabhkailey))
+- v1.1.0 changelog [\#30](https://github.com/rishabhkailey/Grafana-Query-Cache/pull/30) ([github-actions[bot]](https://github.com/apps/github-actions))
+- build\(docker\): base image and package version changes [\#29](https://github.com/rishabhkailey/Grafana-Query-Cache/pull/29) ([rishabhkailey](https://github.com/rishabhkailey))
+- fix\(user access check\) [\#26](https://github.com/rishabhkailey/Grafana-Query-Cache/pull/26) ([rishabhkailey](https://github.com/rishabhkailey))
+- docs\(readme\): Enhance README with features, setup, and images [\#24](https://github.com/rishabhkailey/Grafana-Query-Cache/pull/24) ([rishabhkailey](https://github.com/rishabhkailey))
+- feat\(ci\): Implement CI workflow for beta and main branches [\#21](https://github.com/rishabhkailey/Grafana-Query-Cache/pull/21) ([rishabhkailey](https://github.com/rishabhkailey))
+- feat\(integration tests\): Implement integration tests with Docker-base… [\#20](https://github.com/rishabhkailey/Grafana-Query-Cache/pull/20) ([rishabhkailey](https://github.com/rishabhkailey))
+- feat\(tests\): Add unit tests and enhance testability [\#18](https://github.com/rishabhkailey/Grafana-Query-Cache/pull/18) ([rishabhkailey](https://github.com/rishabhkailey))
+- Feature/caching using nginx [\#13](https://github.com/rishabhkailey/Grafana-Query-Cache/pull/13) ([rishabhkailey](https://github.com/rishabhkailey))
+- feat\(caching\): Add Nginx config and Lua code for caching Grafana queries [\#2](https://github.com/rishabhkailey/Grafana-Query-Cache/pull/2) ([rishabhkailey](https://github.com/rishabhkailey))
+
+
+
+\* *This Changelog was automatically generated by [github_changelog_generator](https://github.com/github-changelog-generator/github-changelog-generator)*
