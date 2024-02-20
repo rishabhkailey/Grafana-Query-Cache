@@ -1,8 +1,9 @@
 # Changelog
 
-## [Unreleased](https://github.com/rishabhkailey/Grafana-Query-Cache/tree/HEAD)
 
-[Full Changelog](https://github.com/rishabhkailey/Grafana-Query-Cache/compare/v0.2.0...HEAD)
+## [v0.2.0](https://github.com/rishabhkailey/Grafana-Query-Cache/tree/v0.2.0) (2024-02-20)
+
+[Full Changelog](https://github.com/rishabhkailey/Grafana-Query-Cache/compare/v0.2.0-beta...v0.2.0)
 
 **Implemented enhancements:**
 
@@ -15,9 +16,6 @@
 
 - Fix issues in Github workflows  [\#33](https://github.com/rishabhkailey/Grafana-Query-Cache/issues/33)
 
-## [v0.2.0](https://github.com/rishabhkailey/Grafana-Query-Cache/tree/v0.2.0) (2024-02-20)
-
-[Full Changelog](https://github.com/rishabhkailey/Grafana-Query-Cache/compare/v0.2.0-beta...v0.2.0)
 
 **Merged pull requests:**
 
