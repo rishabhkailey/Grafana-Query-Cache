@@ -1,0 +1,26 @@
+default:
+  enabled: true
+  acceptable_time_delta_seconds: 1799
+  acceptable_time_range_delta_seconds: 599
+  acceptable_max_points_delta: 259
+  id: default
+
+cache_rules:
+  - panel_selector:
+      datasource: prometheus
+      cacheable: "true"
+    cache_config:
+      enabled: true
+      acceptable_time_delta_seconds: 222
+      acceptable_time_range_delta_seconds: 22
+      acceptable_max_points_delta: 2222
+      id: prometheus
+
+  - panel_selector:
+      datasource: timescaledb
+    cache_config:
+      enabled: true
+      acceptable_time_delta_seconds: 333
+      acceptable_time_range_delta_seconds: 33
+      acceptable_max_points_delta: 3333
+      id: timescaledb

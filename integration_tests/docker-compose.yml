@@ -1,5 +1,12 @@
 version: '3.8'
 
+# predictable cidr required for integration test (cache invalid endpoint)
+networks:
+  default:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.31.255.0/24"
 services:
   grafana:
     image: grafana/grafana:10.2.3-ubuntu
@@ -14,7 +21,7 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards
       - ./certs:/certs
     env_file:
-      - .env
+      - ${DOCKER_COMPOSE_ENV_FILE:-.env}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 5s
@@ -41,7 +48,7 @@ services:
     image: timescale/timescaledb-ha:pg14-latest
     restart: unless-stopped
     env_file:
-      - .env
+      - ${DOCKER_COMPOSE_ENV_FILE:-.env}
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready", "-d", "postgres" ]
       interval: 5s
@@ -54,11 +61,33 @@ services:
       dockerfile: Dockerfile
       context: ../
     env_file:
-      - .env
+      - ${DOCKER_COMPOSE_ENV_FILE:-.env}
     depends_on:
       grafana:
         condition: service_healthy
+    volumes:
+      - ./cache_rules.yaml:/etc/grafana-query-cache/cache_rules.yaml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${LISTEN:-80}/api/health"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
 
+  # accessible using localhost from integration-test
+  # used for testing invalidate api
+  local-grafana-query-cache:
+    build:
+      dockerfile: Dockerfile
+      context: ../
+    env_file:
+      - ${DOCKER_COMPOSE_ENV_FILE:-.env}
+    depends_on:
+      grafana:
+        condition: service_healthy
+    network_mode: "service:integration-test"
+    volumes:
+      - ./cache_rules.yaml:/etc/grafana-query-cache/cache_rules.yaml
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${LISTEN:-80}/api/health"]
       interval: 5s
@@ -75,4 +104,4 @@ services:
       grafana-query-cache:
         condition: service_healthy
     env_file:
-      - .env
+      - ${DOCKER_COMPOSE_ENV_FILE:-.env}

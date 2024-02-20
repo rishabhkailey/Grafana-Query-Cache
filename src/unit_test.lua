@@ -1,6 +1,8 @@
-local luaunit = require('luaunit')
-local json = require "cjson";
-local grafana_request = require("grafana_request")
+local luaunit         = require "luaunit"
+local json            = require "cjson";
+local grafana_request = require "grafana_request"
+local utils           = require "utils"
+local config          = require "config"
 
 function test_sorted_queries_json_encode()
     local queries = {
@@ -319,7 +321,7 @@ function test_get_grafana_query_cache_key()
     }
 
     for _, test in pairs(tests) do
-        print(string.format("test: [%s]", test.name))
+        print(string.format("\ntest: [%s]", test.name))
         local cache_key1 = grafana_request.get_grafana_query_cache_key(
             test.request_body1.to,
             test.request_body1.from,
@@ -395,23 +397,453 @@ function test_get_cache_key_and_datasource_uids()
     -- invalid body
     luaunit.assertError(
         function()
-            grafana_request.get_cache_key_and_datasource_uids("{}", acceptable_time_delta_seconds,
-                acceptable_time_range_delta_seconds, acceptable_max_points_delta)
-        end
-    )
-    -- invalid json
-    luaunit.assertError(
-        function()
-            grafana_request.get_cache_key_and_datasource_uids("", acceptable_time_delta_seconds,
+            grafana_request.get_cache_key_and_datasource_uids({}, acceptable_time_delta_seconds,
                 acceptable_time_range_delta_seconds, acceptable_max_points_delta)
         end
     )
 
-    local cache_key, data_sources = grafana_request.get_cache_key_and_datasource_uids(requestBody,
-        acceptable_time_delta_seconds, acceptable_time_range_delta_seconds, acceptable_max_points_delta)
+    local cache_key, data_sources = grafana_request.get_cache_key_and_datasource_uids(
+        json.decode(requestBody),
+        acceptable_time_delta_seconds, acceptable_time_range_delta_seconds, acceptable_max_points_delta
+    )
 
     luaunit.assertStrMatches(cache_key, "time_bucket_number=[0-9]+;time_frame_bucket_number=[0-9]+;queries=[a-zA-Z0-9]+")
     luaunit.assertItemsEquals(data_sources, { "cebc8c1a-8a2c-4b65-8352-f0cb1982615a" })
 end
 
+function test_check_table_type()
+    local tests = {
+        {
+            name = "valid-required-fields",
+            table = {
+                name = "tom",
+                age = 10,
+                funny = true,
+            },
+            type = {
+                { key = "name",  type = "string" },
+                { key = "age",   type = "number" },
+                { key = "funny", type = "boolean" },
+            },
+            expected_output = true,
+        },
+        {
+            name = "valid-optional-field",
+            table = {
+                name = "jerry",
+                age = 11,
+            },
+            type = {
+                { key = "name",  type = "string" },
+                { key = "age",   type = "number" },
+                { key = "funny", type = "boolean", required = false }
+            },
+            expected_output = true,
+        },
+        {
+            name = "invalid-field-type",
+            table = {
+                name = "jerry",
+                age = 11,
+            },
+            type = {
+                { key = "name",  type = "string" },
+                { key = "age",   type = "string" },
+                { key = "funny", type = "boolean", required = false }
+            },
+            expected_output = false,
+        },
+        {
+            name = "valid-multiple-type-field",
+            table = {
+                id = 10,
+                name = "jerry",
+                age = 11,
+            },
+            type = {
+                { key = "name",  type = "string" },
+                { key = "age",   type = "number" },
+                { key = "funny", type = "boolean",      required = false },
+                { key = "id",    type = "string|number" }
+            },
+            expected_output = true,
+        },
+        {
+            name = "invalid-multiple-type-field",
+            table = {
+                id = 10,
+                name = "jerry",
+                age = 11,
+            },
+            type = {
+                { key = "name",  type = "string" },
+                { key = "age",   type = "number" },
+                { key = "funny", type = "boolean",     required = false },
+                { key = "id",    type = "string|table" }
+            },
+            expected_output = false,
+        }
+    }
+    for _, test in pairs(tests) do
+        local valid = utils.check_table_type(test.table, test.type)
+        print(string.format("\ntest_check_table_type: [%s]", test.name))
+        if test.expected_output then
+            luaunit.assertTrue(valid)
+        else
+            luaunit.assertFalse(valid)
+        end
+    end
+end
+
+function test_check_type()
+    local tests = {
+        {
+            name = "valid-type-number",
+            variable = 10,
+            type = "number",
+            expected_output = true,
+        },
+        {
+            name = "valid-type-string",
+            variable = "hi",
+            type = "string",
+            expected_output = true,
+        },
+        {
+            name = "valid-type-table",
+            variable = {},
+            type = "table",
+            expected_output = true,
+        },
+        {
+            name = "invalid-type-01",
+            variable = "hi",
+            type = "number",
+            expected_output = false,
+        },
+        {
+            name = "invalid-type-02",
+            variable = {},
+            type = "string",
+            expected_output = false,
+        },
+        {
+            name = "valid-multiple-type-01",
+            variable = {},
+            type = "table|string|number",
+            expected_output = true,
+        },
+        {
+            name = "valid-multiple-type-02",
+            variable = 1,
+            type = "table|string|number",
+            expected_output = true,
+        },
+        {
+            name = "valid-multiple-type-03",
+            variable = "hi",
+            type = "table|string|number",
+            expected_output = true,
+        },
+        {
+            name = "invalid-multiple-type-01",
+            variable = "hi",
+            type = "table|number",
+            expected_output = false,
+        },
+        {
+            name = "invalid-multiple-type-01",
+            variable = 1,
+            type = "table|string",
+            expected_output = false,
+        }
+    }
+
+    for _, test in pairs(tests) do
+        print(string.format("\ntest_check_type: [%s]", test.name))
+        luaunit.assertEquals(
+            utils.check_type(type(test.variable), test.type),
+            test.expected_output
+        )
+    end
+end
+
+function test_get_query_labels()
+    local tests = {
+        {
+            name = "valid-query-label-01",
+            query = [[--key1=value1;key2=value2;key3=value3;
+            select * from test where a=b;]],
+            expected_output = {
+                key1 = "value1",
+                key2 = "value2",
+                key3 = "value3",
+            }
+        },
+        {
+            name = "valid-query-label-02",
+            query = [[--key1=value1; key2=value2; key3=value3;
+            prometheus_metric{label="value1"}
+            ]],
+            expected_output = {
+                key1 = "value1",
+                key2 = "value2",
+                key3 = "value3",
+            }
+        },
+        {
+            name = "valid-query-label-03",
+            query = [[-- key1 = value1 ; key2 = value2 ; key3 = value3 ;
+            prometheus_metric{label="value1"}
+            ]],
+            expected_output = {
+                key1 = "value1",
+                key2 = "value2",
+                key3 = "value3",
+            }
+        },
+        {
+            name = "invalid-query-label-01",
+            query = [[prometheus_metric{label=value1}]],
+            expected_output = nil
+        },
+        {
+            name = "invalid-query-label-01",
+            query = [[select * from test where label=value1;]],
+            expected_output = nil
+        }
+    }
+    for _, test in pairs(tests) do
+        print(string.format("\ntest_get_query_labels: [%s]", test.name))
+        luaunit.assertItemsEquals(
+            grafana_request.get_query_labels(test.query),
+            test.expected_output
+        )
+    end
+end
+
+function test_get_queries_labels()
+    local tests = {
+        {
+            name = "valid-labels-01",
+            queries = {
+                {
+                    query = [[-- key1 = value1 ; key2 = value2 ; key3 = value3 ;
+                    prometheus_metric{label="value1"}
+                    ]],
+                },
+                {
+                    query = [[prometheus_metric{label="value1"}]],
+                },
+                {
+                    query = [[prometheus_metric{label="value1"}]],
+                }
+            },
+            expected_output = {
+                key1 = "value1",
+                key2 = "value2",
+                key3 = "value3",
+            }
+        },
+        {
+            name = "valid-labels-02",
+            queries = {
+                {
+                    query = [[prometheus_metric{label="value1"}]],
+                },
+                {
+                    query = [[-- key1 = value1 ; key2 = value2 ; key3 = value3 ;
+                    prometheus_metric{label="value1"}
+                    ]],
+                },
+                {
+                    query = [[prometheus_metric{label="value1"}]],
+                }
+            },
+            expected_output = {
+                key1 = "value1",
+                key2 = "value2",
+                key3 = "value3",
+            }
+        },
+        {
+            name = "valid-labels-03",
+            queries = {
+                {
+                    query = [[prometheus_metric{label="value1"}]],
+                },
+                {
+                    query = [[prometheus_metric{label="value1"}]],
+                },
+                {
+                    query = [[-- key1 = value1 ; key2 = value2 ; key3 = value3 ;
+                    prometheus_metric{label="value1"}
+                    ]],
+                }
+            },
+            expected_output = {
+                key1 = "value1",
+                key2 = "value2",
+                key3 = "value3",
+            }
+        },
+        {
+            name = "invalid-labels-01",
+            queries = {
+                {
+                    query = [[prometheus_metric{label="value1"}]],
+                },
+                {
+                    query = [[prometheus_metric{label="value1"}]],
+                },
+                {
+                    query = [[prometheus_metric{label="value1"}]],
+                }
+            },
+            expected_output = nil
+        }
+    }
+    for _, test in pairs(tests) do
+        print(string.format("\ntest_get_queries_labels: [%s]", test.name))
+        luaunit.assertItemsEquals(
+            grafana_request.get_queries_labels(test.queries),
+            test.expected_output
+        )
+    end
+end
+
+REUSABLE_CACHE_RULE_01 = [[
+      default:
+        enabled: true
+        acceptable_time_delta_seconds: 111
+        acceptable_time_range_delta_seconds: 11
+        acceptable_max_points_delta: 1111
+        id: default
+      cache_rules:
+        - panel_selector:
+            datasource: prometheus
+            cacheable: "false"
+          cache_config:
+            enabled: true
+            acceptable_time_delta_seconds: 222
+            acceptable_time_range_delta_seconds: 22
+            acceptable_max_points_delta: 2222
+            id: prometheus
+    
+        - panel_selector:
+            datasource: timescaledb
+          cache_config:
+            enabled: true
+            acceptable_time_delta_seconds: 333
+            acceptable_time_range_delta_seconds: 33
+            acceptable_max_points_delta: 3333
+            id: timescaledb
+        ]]
+
+function test_get_cache_config()
+    local tests = {
+        {
+            name = "invalid-labels-01",
+            config = REUSABLE_CACHE_RULE_01,
+            labels = {},
+            expected_cache_config_id = "default"
+        },
+        {
+            name = "invalid-labels-02",
+            config = REUSABLE_CACHE_RULE_01,
+            labels = {
+                abc = "def"
+            },
+            expected_cache_config_id = "default"
+        },
+        {
+            name = "valid-labels-01",
+            config = REUSABLE_CACHE_RULE_01,
+            labels = {
+                datasource = "timescaledb"
+            },
+            expected_cache_config_id = "timescaledb"
+        },
+        {
+            name = "valid-labels-02",
+            config = REUSABLE_CACHE_RULE_01,
+            labels = {
+                datasource = "prometheus",
+                cacheable = "false"
+            },
+            expected_cache_config_id = "prometheus"
+        },
+    }
+    for _, test in pairs(tests) do
+        print(string.format("\ntest_get_cache_config: [%s]", test.name))
+        local config_file_path = string.format("/tmp/test-config-%d.yaml", os.time(os.date("!*t")))
+        local config_file = io.open(config_file_path, "w")
+        if config_file == nil then
+            error("unable to create temporary config_file")
+        end
+        config_file:write(test.config)
+        config_file:close()
+
+        config.load_config(config_file_path)
+        os.remove(config_file_path)
+        local cfg = config.get_config()
+        if cfg == nil then
+            error("nil config")
+        end
+        luaunit.assertItemsEquals(
+            cfg:get_cache_config(test.labels).id,
+            test.expected_cache_config_id
+        )
+    end
+end
+
+function test_get_queries_config()
+    local tests = {
+        {
+            name = "invalid-queries-01",
+            config = REUSABLE_CACHE_RULE_01,
+            queries = {},
+            expected_cache_config_id = "default"
+        },
+        {
+            name = "valid-queries",
+            config = REUSABLE_CACHE_RULE_01,
+            queries = {
+                {
+                    query = [[-- datasource=timescaledb;
+                    prometheus_metric{label="value1"}
+                    ]],
+                },
+                {
+                    query = [[prometheus_metric{label="value1"}]],
+                },
+                {
+                    query = [[prometheus_metric{label="value1"}]],
+                }
+            },
+            expected_cache_config_id = "timescaledb"
+        },
+    }
+    for _, test in pairs(tests) do
+        print(string.format("\ntest_get_queries_config: [%s]", test.name))
+        local config_file_path = string.format("/tmp/test-config-%d.yaml", os.time(os.date("!*t")))
+        local config_file = io.open(config_file_path, "w")
+        if config_file == nil then
+            error("unable to create temporary config_file")
+        end
+        config_file:write(test.config)
+        config_file:close()
+
+        config.load_config(config_file_path)
+        os.remove(config_file_path)
+        local cfg = config.get_config()
+        if cfg == nil then
+            error("nil config")
+        end
+        luaunit.assertItemsEquals(
+            grafana_request.get_queries_config(cfg, test.queries).id,
+            test.expected_cache_config_id
+        )
+    end
+end
 os.exit(luaunit.LuaUnit.run())

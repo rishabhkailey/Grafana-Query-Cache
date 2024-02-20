@@ -2,19 +2,18 @@
 
 1. Start Grafana, Prometheus, and TimescaleDB:
     ```bash
-    cd test
-    docker compose up -d
+    docker compose --project-name integration_tests -f integration_tests/docker-compose.yml up -d --build
     ```
-* Create a network for VS Code devcontainer (if applicable):
+2. Create a network for VS Code devcontainer (if applicable):
     ```bash  
     docker network create grafana-cache-test-network || true
     # if the following command fails, then use `docker ps` to get id of vscode devcontainer
     dev_container=$(docker ps | grep vsc-grafana-query-cache | egrep -o "^[^\ ]+")
-    docker network connect grafana-cache-test-network test-grafana-query-cache-1 --alias grafana-query-cache
+    docker network connect grafana-cache-test-network integration_tests-grafana-query-cache-1 --alias grafana-query-cache
     docker network connect grafana-cache-test-network $dev_container
     
     # test connection with the grafana cache proxy from devcontainer
-    curl -v test-grafana-query-cache-1:8080
+    curl -v http://grafana-query-cache:8080
     ```
 3. Run the tests:
     1. Go to Run and Debug in VS Code.
@@ -23,9 +22,13 @@
 
 # Run test in ci/cd
 ```bash
-docker compose up -d
-sudo docker exec test-integration-test-1 go clean -testcache
-sudo docker exec test-integration-test-1 go test ./
+# test default scenario
+docker compose --project-name integration_tests -f integration_tests/docker-compose.yml up -d --build
+sudo docker exec integration_tests-integration-test-1 go clean -testcache
+sudo docker exec integration_tests-integration-test-1 go test ./
+
+# for testing different scenario
+DOCKER_COMPOSE_ENV_FILE=.env.invalidate-cache-dockernetwork docker compose --project-name integration_tests -f integration_tests/docker-compose.yml up --build -d
 ```
 
 

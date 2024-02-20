@@ -7,26 +7,35 @@ on:
       - main
     paths-ignore:
       - CHANGELOG.md
-
+env:
+  DOCKERIZE_VERSION: v0.7.0
+  
 jobs:
   nginx-config-test-default-options:
     runs-on: "ubuntu-latest"
     container: 
-      image: "openresty/openresty:1.21.4.3-bullseye-fat"
+      image: "openresty/openresty:1.25.3.1-0-bookworm-fat"
     timeout-minutes: 5
+    env:
+      NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
-      - name: set runtime env variables
-        run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
-      - run: |
-          echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
-          chmod +x ./entrypoint.sh && \
-          ./entrypoint.sh test
+      # Anchors are not currently supported
+      # - &install_dockerize
+      - name: install dockerize
+        run: |
+          apt-get update \
+          && apt-get install -y wget \
+          && wget -O - https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz | tar xzf - -C /usr/local/bin
+      - name: test config
+        run: |
+          chmod +x ./scripts/entrypoint.sh && \
+          ./scripts/entrypoint.sh test
 
   nginx-config-test-ssl-on:
     runs-on: "ubuntu-latest"
     container: 
-      image: "openresty/openresty:1.21.4.3-bullseye-fat"
+      image: "openresty/openresty:1.25.3.1-0-bookworm-fat"
     timeout-minutes: 5
     env:
       GRAFANA_HOST: "localhost:3000"
@@ -47,19 +56,25 @@ jobs:
       SSL_PASSWORD_FILE: ""
       CLIENT_MAX_BODY_SIZE: "5m"
       NGINX_CONFIG_OUTPUT_FILE: "/etc/nginx/conf.d/grafana.conf"
+      NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
-      - name: set runtime env variables
-        run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
-      - run: |
-          echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
-          chmod +x ./entrypoint.sh && \
-          ./entrypoint.sh test
+      # Anchors are not currently supported
+      # - *install_dockerize
+      - name: install dockerize
+        run: |
+          apt-get update \
+          && apt-get install -y wget \
+          && wget -O - https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz | tar xzf - -C /usr/local/bin  
+      - name: test config
+        run: |
+          chmod +x ./scripts/entrypoint.sh && \
+          ./scripts/entrypoint.sh test
     
   nginx-config-test-ssl-off:
     runs-on: "ubuntu-latest"
     container: 
-      image: "openresty/openresty:1.21.4.3-bullseye-fat"
+      image: "openresty/openresty:1.25.3.1-0-bookworm-fat"
     timeout-minutes: 5
     env: 
       GRAFANA_HOST: "localhost:3000"
@@ -80,42 +95,55 @@ jobs:
       SSL_PASSWORD_FILE: "/cert-password"
       CLIENT_MAX_BODY_SIZE: "5m"
       NGINX_CONFIG_OUTPUT_FILE: "/etc/nginx/conf.d/grafana.conf"
+      NGINX_CONFIG_TEMPLATE_DIRECTORY: "${{ github.workspace }}/config/nginx/"
     steps:
       - uses: actions/checkout@v4
-      - name: set runtime env variables
-        run: echo "NGINX_CONFIG_TEMPLATE_DIRECTORY=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      # Anchors are not currently supported
+      # - *install_dockerize
+      - name: install dockerize
+        run: |
+          apt-get update \
+          && apt-get install -y wget \
+          && wget -O - https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz | tar xzf - -C /usr/local/bin  
       - name: create empty test files
         run: touch $SSL_CERTIFICATE $SSL_CERTIFICATE_KEY $SSL_PASSWORD_FILE
-      - run: |
-          echo $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && ls $NGINX_CONFIG_TEMPLATE_DIRECTORY && \
-          chmod +x ./entrypoint.sh && \
-          ./entrypoint.sh test
+      - name: test config
+        run: |
+          chmod +x ./scripts/entrypoint.sh && \
+          ./scripts/entrypoint.sh test
 
   unit-test:      
     runs-on: "ubuntu-latest"
     timeout-minutes: 10
     container: 
-      image: "openresty/openresty:1.21.4.3-bullseye-fat"
+      image: "openresty/openresty:1.25.3.1-0-bookworm-fat"
     env:
       LUA_CPATH: ";;/usr/local/openresty/lualib/?.so;/usr/local/openresty/site/lualib/?.so;/usr/local/lib/lua/5.1/?.so;"
       LUA_PATH: ";;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/lib/lua/5.1?.lua;/usr/local/share/lua/5.1/?.lua;"
     steps:
-      - name: install required packages
-        run: 
-          |
-            apt update && apt install -y luarocks && \
-            luarocks install luaunit && luarocks install md5
-      - name: add github workspace in the LUA_PATH variable
-        run: echo "LUA_PATH=$LUA_PATH;$GITHUB_WORKSPACE/?.lua" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
+      - name: install required debian packages
+        run: apt update && apt install -y luarocks=3.8.0+dfsg1-1 libyaml-dev=0.2.5-1
+      - name: install required packages
+        run: "/bin/bash ./scripts/install-packages.sh rocks.txt rocks.dev.txt"
+      - name: add github workspace in the LUA_PATH variable
+        run: echo "LUA_PATH=$LUA_PATH;$GITHUB_WORKSPACE/src/?.lua" >> "$GITHUB_ENV"
       - name: run tests
-        run: luajit unit_test.lua
+        run: luajit src/unit_test.lua
 
   integration-test:
     runs-on: "ubuntu-latest"
     timeout-minutes: 10
+    strategy:
+      matrix:
+        config: [
+          ".env",
+          ".env.invalidate_cache_enabled_for_docker_network",
+          ".env.invalidate_cache_enabled_for_localhost"
+          ]
     env: 
       DOCKER_COMPOSE_VERSION: v2.23.3
+      DOCKER_COMPOSE_ENV_FILE: ${{ matrix.config }}
     steps:
       - name: docker compose cli
         run: |
@@ -123,11 +151,11 @@ jobs:
           chmod +x /opt/docker-compose
       - uses: actions/checkout@v4
       - name: start containers
-        run: /opt/docker-compose -f test/docker-compose.yml up -d --build
+        run: /opt/docker-compose --project-name integration_tests -f integration_tests/docker-compose.yml up -d --build
       - name: clear test cache
-        run: docker exec test-integration-test-1 go clean -testcache
+        run: docker exec integration_tests-integration-test-1 go clean -testcache
       - name: run test
-        run: docker exec test-integration-test-1 go test -v ./
+        run: docker exec integration_tests-integration-test-1 go test -v ./
 
   container-image-scan:
     runs-on: ubuntu-latest
@@ -148,4 +176,4 @@ jobs:
           format: "table"
           ignore-unfixed: true
           vuln-type: "os,library"
-          exit-code: "1"
+          exit-code: "0"

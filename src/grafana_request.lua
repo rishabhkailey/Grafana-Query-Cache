@@ -1,39 +1,35 @@
 local json = require "cjson";
--- resty md5 doesn't work without nginx. (unit test fails due to `luajit: undefined symbol: MD5_Init` error)
--- local resty_md5 = require "resty.md5";
 local md5 = require "md5";
-local resty_string = require "resty.string";
-
+local utils = require "utils"
 
 -- get_datasource_uids
 --- @param queries table
---- @return table
+--- @return table|nil uids
+--- @return string errorMessage
 local function get_datasource_uids(queries)
   -- to avoid duplicates
   local data_source_already_added = {}
   local data_sources = {}
   for _, query in pairs(queries) do
     if type(query.datasource) ~= "table" and type(query.datasource.uid) ~= "string" and string.len(query.datasource.uid) ~= 0 then
-      error("invalid request body, unable to get datasource uid")
-      return data_sources
+      return nil, "invalid request body, unable to get datasource uid"
     end
     if not data_source_already_added[query.datasource.uid] then
       table.insert(data_sources, query.datasource.uid)
       data_source_already_added[query.datasource.uid] = true
     end
   end
-  return data_sources
+  return data_sources, ""
 end
 
 --- sorted_table_json_encode returns the json encoding of the table with sorted keys
 --- @param input_table table
 --- @return string
-local function sorted_table_json_encode(input_table) 
-  
+local function sorted_table_json_encode(input_table)
   local sorted_keys = {}
   for key in pairs(input_table) do table.insert(sorted_keys, key) end
   table.sort(sorted_keys)
-  
+
   local output = ""
   output = output .. "{"
   for _, key in pairs(sorted_keys) do
@@ -88,7 +84,7 @@ local function tomd5(input)
   -- return resty_string.to_hex(md5:final())
 end
 
--- adds key value pair in the cache key. 
+-- adds key value pair in the cache key.
 -- format = key1=value1;key2=value2
 --- @param cache_key string
 --- @param property_name string
@@ -103,12 +99,13 @@ local function add_property_in_cache_key(cache_key, property_name, property_valu
 end
 
 --- get_grafana_query_cache_key returns the cache key for the request
---- it consider time (to), time frame (to - from) and queries 
+--- it consider time (to), time frame (to - from) and queries
 --- @param to string
 --- @param from string
 --- @param queries table
 --- @return string
-local function get_grafana_query_cache_key(to, from, queries, time_bucket_length_ms, time_frame_bucket_length_ms, max_data_points_bucket_length)
+local function get_grafana_query_cache_key(to, from, queries, time_bucket_length_ms, time_frame_bucket_length_ms,
+                                           max_data_points_bucket_length)
   local cache_key = ""
 
   local time_bucket_number = math.ceil(
@@ -136,28 +133,26 @@ local function get_grafana_query_cache_key(to, from, queries, time_bucket_length
 end
 
 --- get_cache_key_and_datasource_uids returns the cache key and table of datasource uids
---- @param request_body string
+--- @param parsed_request_body table
 --- @param acceptable_time_delta_seconds number
 --- @param acceptable_time_range_delta_seconds number
 --- @param acceptable_max_points_delta number
---- @return string, table
-function get_cache_key_and_datasource_uids(request_body, acceptable_time_delta_seconds, acceptable_time_range_delta_seconds, acceptable_max_points_delta)
-  local parsed_request_body = json.decode(request_body)
-  if type(parsed_request_body) ~= "table" or tonumber(parsed_request_body.to) == nil or tonumber(parsed_request_body.from) == nil or type(parsed_request_body.queries) ~= "table" then
-    error("invalid request body")
-    return "", {}
-  end
+--- @return string cache_key
+--- @return table|nil datasource_uids
+--- @return string errorMessage
+function get_cache_key_and_datasource_uids(parsed_request_body, acceptable_time_delta_seconds,
+                                           acceptable_time_range_delta_seconds, acceptable_max_points_delta)
   local cache_key = get_grafana_query_cache_key(
-    parsed_request_body.to, 
+    parsed_request_body.to,
     parsed_request_body.from,
-    parsed_request_body.queries, 
-    acceptable_time_delta_seconds * 1000, 
-    acceptable_time_range_delta_seconds * 1000, 
+    parsed_request_body.queries,
+    acceptable_time_delta_seconds * 1000,
+    acceptable_time_range_delta_seconds * 1000,
     acceptable_max_points_delta
   )
   -- print(#parsed_request_body.queries)
-  local data_sources = get_datasource_uids(parsed_request_body.queries)
-  return cache_key, data_sources
+  local data_sources, errorMessage = get_datasource_uids(parsed_request_body.queries)
+  return cache_key, data_sources, errorMessage
 end
 
 --- check_user_access returns true if the user has access to all the datasources
@@ -165,14 +160,14 @@ end
 --- @param data_sources table
 --- @param cookie_header_value string
 --- @param authorization_header_value string
---- @return boolean
+--- @return boolean user_access
+--- @return string errorMessage
 function check_user_access(grafana_base_url, data_sources, cookie_header_value, authorization_header_value)
   local http = require "resty.http"
   local http_client = http.new()
 
   if string.len(grafana_base_url) == 0 then
-    error("empty grafana base url")
-    return false
+    return false, "empty grafana base url"
   end
 
   for _, data_source in pairs(data_sources) do
@@ -195,63 +190,97 @@ function check_user_access(grafana_base_url, data_sources, cookie_header_value, 
       headers = request_headeres
     })
     if err ~= nil or res == nil then
-      return false
+      return false, "got nil response"
     end
     if res.status == nil or type(res.status) ~= "number" or res.status ~= 200 then
-      return false
+      return false, "non 200 status code"
     end
   end
-  return true
+  return true, ""
 end
 
--- local requestBody = [[
---   {
---       "from": "1703631956991",
---       "to": "1703653556991",
---       "queries": [
---         {
---           "refId": "FundCategory",
---           "datasource": {
---             "type": "postgres",
---             "uid": "cebc8c1a-8a2c-4b65-8352-f0cb1982615a"
---           },
---           "rawSql": "select distinct COALESCE(NULLIF(category, ''), 'unknown') from funds;",
---           "format": "table"
---         },
---         {
---           "refId": "FundCategory",
---           "datasource": {
---             "type": "postgres",
---             "uid": "cebc8c1a-8a2c-4b65-8352-f0cb1982615a"
---           },
---           "rawSql": "select distinct COALESCE(NULLIF(category, ''), 'unknown') from funds;",
---           "format": "table"
---         }
---       ]
---     }
--- ]]
+---comment
+---@param queries table
+---@param config Config
+---@return CacheConfig
+function get_queries_config(config, queries) 
+  local labels = get_queries_labels(queries)
+  if labels == nil then
+    return config.default
+  end
+  return config:get_cache_config(labels)
+end
 
--- xpcall(function()
---   local cache_key, data_sources = get_cache_key_and_datasource_uids(requestBody, 123124, 123123, 123)
---   if type(cache_key) ~= "string" or type(data_sources) ~= "table" then
---     error("received nil data from get_cache_key_and_datasource_uids")
---     return
---   end
---   print(cache_key)
---   for _, datasource in pairs(data_sources) do
---     print(datasource)
---   end
--- end, function(err)
---   print("failed", err)
--- end)
+POSSIBLE_QUERY_KEYS = {
+  "expr", -- prometheus 
+  "rawSql", -- sql
+  "query", -- influx, mongodb
+}
+---comment
+---@param queries table
+---@return table|nil labels returns `nil` if no label found
+function get_queries_labels(queries)
+  local raw_query = ""
+  ---@type nil|table
+  local labels = nil
+  for _, query in pairs(queries) do
+    for _, key in pairs(POSSIBLE_QUERY_KEYS) do
+      if type(query[key]) == "string" and string.len(query[key]) > 0 then
+        raw_query = query[key]
+        break
+      end
+    end
+    if raw_query:len() > 0 then
+      labels = get_query_labels(raw_query)
+    end
+    if labels ~= nil then
+      return labels
+    end
+  end
+  return nil
+end
 
+---comment
+---@param query string
+---@return table|nil labels returns `nil` if no label found
+function get_query_labels(query)
+  local _, comment_sequence_end = query:find("^[^a-zA-Z0-9 \t]+")
+  if comment_sequence_end == nil then
+    return nil
+  end
 
+  local line_end, _ = query:find("\n")
+  line_end = line_end or query:len()
+  local label_string = query:sub(comment_sequence_end + 1, line_end - 1)
+
+  local labels = {}
+  local label_pattern = "%s*[a-zA-Z0-9][a-zA-Z0-9-]+%s*=%s*[a-zA-Z0-9-]+%s*;"
+
+  local label_count = 0
+  for label in string.gmatch(label_string, label_pattern) do
+    label = label:gsub("[%s;]", "")
+    local equal_char_index = string.find(label, "=")
+    if equal_char_index ~= nil then
+      local key = label:sub(0, equal_char_index - 1)
+      local value = label:sub(equal_char_index + 1, label:len())
+      labels[key] = value
+      label_count = label_count + 1
+    end
+  end
+  if label_count == 0 then
+    return nil
+  end
+  return labels
+end
 
 return {
   get_cache_key_and_datasource_uids = get_cache_key_and_datasource_uids,
   check_user_access = check_user_access,
   -- returning below functions for unit tests. not sure if this is a good approach
-  sorted_queries_json_encode = sorted_queries_json_encode, 
+  sorted_queries_json_encode = sorted_queries_json_encode,
   get_datasource_uids = get_datasource_uids,
-  get_grafana_query_cache_key = get_grafana_query_cache_key
+  get_grafana_query_cache_key = get_grafana_query_cache_key,
+  get_queries_config = get_queries_config,
+  get_query_labels = get_query_labels,
+  get_queries_labels = get_queries_labels
 }

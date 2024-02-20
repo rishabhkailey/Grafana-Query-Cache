@@ -61,6 +61,38 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
 
+      - name: generate docker repo description file
+        shell: python
+        env:
+          INPUT_MARKDOWN_FILE: "./README.md"
+          OUTPUT_MARKDOWN_FILE: "./docker-repo-description.md"
+        run: |
+          #!/usr/bin/python3
+          import os
+          import re
+          import sys
+
+          input_file_path = os.getenv("INPUT_MARKDOWN_FILE")
+          output_file_path = os.getenv("OUTPUT_MARKDOWN_FILE")
+          if len(input_file_path) == 0 or len(output_file_path) == 0:
+              sys.exit("either INPUT_MARKDOWN_FILE or OUTPUT_MARKDOWN_FILE environment variable not set")
+
+          base_url = "{github_server_url}/{repository}/blob/{commit}".format( 
+              github_server_url = os.getenv("GITHUB_SERVER_URL", "https://github.com"), 
+              repository = os.getenv("GITHUB_REPOSITORY", "rishabhkailey/Grafana-Query-Cache"),
+              commit = os.getenv("GITHUB_SHA", "main"),
+          )
+          readme_file = open(input_file_path, "r")
+          readme_file_content = readme_file.read()
+
+          output_file_content = re.sub(
+              r"\[([^\]]+)\]\((\.\/)([^\]]+)\)",
+              rf"[\1]({base_url}/\3)",
+              readme_file_content
+          )
+          output_file = open(output_file_path, "w")
+          output_file.write(output_file_content)
+
       - name: Update docker repo description
         uses: peter-evans/dockerhub-description@v3
         if: env.PROD_RELEASE == 'true'
@@ -68,9 +100,8 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
           repository: ${{ env.IMAGE_NAME }}
-          readme-filepath: "./README.md"	
+          readme-filepath: "./docker-repo-description.md"	
      
-      
   changelog-generator:
     runs-on: ubuntu-latest
     needs: ["container-image-publish"]
@@ -80,7 +111,8 @@ jobs:
       pull-requests: write
     env:
       GH_TOKEN: ${{ github.token }}
-      BRANCH_NAME: v1.1.0-changelog-${{ github.sha }}
+      BRANCH_NAME: ${{ github.ref_name }}-changelog-${{ github.sha }}
+      DOCKER_TAG_LIST_URL: "https://hub.docker.com/r/rishabhveer/grafana-query-cache/tags"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -121,7 +153,7 @@ jobs:
           docker pull rishabhveer/grafana-query-cache:${RELEASE_VERION}
           \`\`\`
 
-          view all available tags for an image on [Docker Hub](https://hub.docker.com/repository/docker/rishabhveer/grafana-query-cache/tags?page=1&ordering=last_updated).
+          view all available tags for an image on [Docker Hub](${DOCKER_TAG_LIST_URL}).
           EOF
 
           gh release edit ${{ env.TAG_NAME }} --notes-file release-notes
